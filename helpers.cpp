@@ -118,7 +118,7 @@ std::tuple<double, float> run_Nexullance_IT(std::string input_graph_path, std::s
     NexullanceIT nexu_it = NexullanceIT(G, const_cast<const float**>(matrix), Cap_link, debug);
     
     auto start = std::chrono::high_resolution_clock::now();
-    nexu_it.optimize(num_step_1, 1.0, 1.0, 6, 3.0, 7.0, 10*num_routers);
+    nexu_it.optimize(num_step_1, 1.0, 1.0, 6, 0.1, 7.0, num_routers);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     

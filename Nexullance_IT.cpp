@@ -195,9 +195,17 @@ bool NexullanceIT::step_2(float _alpha, float _beta, float step, float threshold
             }
             std::vector<path_id> path_ids = link_path_ids[i][j];
 
-            //TODO: sort contributions to load
-
+            std::multimap<float, path_id, std::greater<float>> sorted_path_ids;
             for (auto old_path_id: path_ids) {
+                std::vector<Vertex> old_path = path_id_to_path[old_path_id];
+                int src = old_path.front();
+                int dst = old_path.back();
+                float contribution = routing_tables[src][dst][old_path_id]*M_R[src][dst]/Cap_remote;
+                sorted_path_ids.insert(std::make_pair(contribution, old_path_id));
+            }
+
+            for (auto item: sorted_path_ids) {
+                path_id old_path_id = item.second;
                 std::vector<Vertex> old_path = path_id_to_path[old_path_id];
                 Vertex src = old_path.front();
                 Vertex dst = old_path.back();
@@ -220,6 +228,18 @@ bool NexullanceIT::step_2(float _alpha, float _beta, float step, float threshold
 
                 for(std::vector<Vertex> new_path: all_paths){
                     if(new_path != old_path){
+
+                        // // check whether or not there is a max loaded link in the new path
+                        // float new_path_max_load = 0.0;
+                        // for (int l = 0; l < new_path.size() - 1; l++) {
+                        //     if (link_load[new_path[l]][new_path[l+1]] > new_path_max_load) {
+                        //         new_path_max_load = link_load[new_path[l]][new_path[l+1]];
+                        //     }
+                        // }
+                        // if(new_path_max_load == max_load){
+                        //     continue;
+                        // }
+
                         success_attempt = true;
                         attempts++;
 
@@ -244,7 +264,8 @@ bool NexullanceIT::step_2(float _alpha, float _beta, float step, float threshold
                             if (path_id_to_path[it->second] == new_path) {
                                 new_path_found = true;
                                 new_path_id = it->first;
-                                delta_weigth = std::min(step, std::min(old_path_weight, 1 - it->second));
+                                delta_weigth = std::min(step, std::min(old_path_weight, 1 - it->second)); 
+                                // delta_weigth = std::min(std::min(step, std::min(old_path_weight, 1 - it->second)), Cap_remote*(max_load-new_path_max_load)/M_R[src][dst]); 
                                 it->second += delta_weigth;
                                 break;
                             }
@@ -253,6 +274,7 @@ bool NexullanceIT::step_2(float _alpha, float _beta, float step, float threshold
                             new_path_id = next_path_id++;
                             path_id_to_path[new_path_id] = new_path;
                             delta_weigth = std::min(step, old_path_weight);
+                            // delta_weigth = std::min(std::min(step, old_path_weight), Cap_remote*(max_load-new_path_max_load)/M_R[src][dst]);
                             current_routing_table[new_path_id] = delta_weigth;
                         }
 
@@ -262,6 +284,12 @@ bool NexullanceIT::step_2(float _alpha, float _beta, float step, float threshold
                             Vertex v = new_path[l+1];
                             Edge e = boost::edge(u, v, G).first; // the boost::edge(u, v, G) returns a pair<Edge edge(u,v), bool found>
                             link_load[e.m_source][e.m_target] += delta_weigth*M_R[src][dst]/Cap_remote; // TODO: to further optimize, divide Cap_remote on the M_R at the beginning?
+                            // // compare with max_load, update if this is higher
+                            // if (link_load[e.m_source][e.m_target] > (max_load + 0.001)) {
+                            //     assert(false &&"should not happen");
+                            //     max_load = link_load[e.m_source][e.m_target];
+                            // }
+                            
                             boost::put(boost::edge_weight, G, e, _alpha + pow(link_load[e.m_source][e.m_target] ,_beta));
                             if(!new_path_found)
                                 link_path_ids[e.m_source][e.m_target].push_back(new_path_id);
@@ -293,7 +321,7 @@ bool NexullanceIT::step_2(float _alpha, float _beta, float step, float threshold
                     }
                 }
 
-                if(success_attempt /*TODO: compare with max load?*/){
+                if(success_attempt ){
                     break;
                 }else{
                     continue;
