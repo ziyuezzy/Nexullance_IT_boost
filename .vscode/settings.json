@@ -78,5 +78,18 @@
         "typeinfo": "cpp",
         "valarray": "cpp",
         "variant": "cpp"
-    }
+    },
+
+    // "C_Cpp.files.exclude": {
+    //     "boost/**": true,
+    // },
+    // "files.watcherExclude": {
+    //     "boost/**": true,
+    // },
+    // "search.exclude": {
+    //     "boost/**": true,
+    // },
+    // "files.exclude": {
+    //     "boost/**": true,
+    // },
 }

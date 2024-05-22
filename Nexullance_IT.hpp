@@ -2,11 +2,39 @@
 #define NEXULLANCE_IT_HPP
 
 #include "definitions.hpp"
+// #include <list>
+// #include <map>
+
+using path_id = size_t;
 
 class NexullanceIT{
     // _nx_graph: nxGraph, _M_R: np.ndarray, _Cap_remote: float, _verbose:bool=False
     public:
-        NexullanceIT(Graph& input_graph, );
-}
+        NexullanceIT(Graph& _input_graph, const float** _M_R, const float _Cap_remote, const bool _verbose=false);
+        ~NexullanceIT();
 
+        void get_finial_max_load();
+        void step_1(float _alpha, float _beta);
+        bool step_2(float _alpha, float _beta, float step, float threshold=0.001, int min_attempts=50, int max_attempts=100000);
+        void optimize(int num_step_1, float alpha_step_1, float beta_step_1, int max_num_step_2, float alpha_step_2, float beta_step_2, int method_2_min_attempts);
+
+        std::list<float> result_max_loads_step_1;
+        std::list<float> result_max_loads_step_2;
+        float final_max_load;
+    private:
+        Graph G;
+        size_t num_edges;
+        size_t num_vertices;
+        const float** M_R;
+        const float Cap_remote;
+        const bool verbose;
+        path_id next_path_id;
+        // TODO: unordered map?
+        std::map<path_id, std::vector<Vertex>> path_id_to_path; // using vector here, because the shortest-path algorithm return vector<Vertex> as a path
+        std::map<path_id, float>** routing_tables; // a 2D-array of map, first index corresponds to source router id, second index the destination router id.
+        std::map<Edge, float> link_load; // TODO?: probably not necessary to use a map. So in case of bottleneck of std::map operation, we can consider to optimize this?(2D s-d array with sparse values)
+        std::map<Edge, std::vector<path_id>> link_path_ids; // using vector here, because we may need to dynamically remove or append elements.   
+
+
+};
 #endif // GRAPH_DEFINITIONS_HPP
