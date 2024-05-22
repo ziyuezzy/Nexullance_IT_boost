@@ -5,7 +5,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/main",
+            "program": "${workspaceFolder}/main.exe",
             "args": ["/users/ziyzhang/topology-research/nexullance/handover_data/RRG_25_6/graph.graphml", 
                     "/users/ziyzhang/topology-research/nexullance/handover_data/RRG_25_6/uniform.txt",
                     "debug"],

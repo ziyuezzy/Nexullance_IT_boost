@@ -1,7 +1,8 @@
 CXX = c++
 INCLUDES = -I/users/ziyzhang/topology-research/nexullance/IT_boost/boost
-CXXFLAGS = -std=c++14 -O0 -g -fexceptions
-# CXXFLAGS = -std=c++14 -O3 -ffast-math -Wall -pedantic
+# CXXFLAGS = -std=c++14 -O0 -g -fexceptions
+# CXXFLAGS = -std=c++14 -O3 -g -ffast-math -Wall -pedantic
+CXXFLAGS = -std=c++14 -O3 -ffast-math -Wall -pedantic
 LDFLAGS = -L/users/ziyzhang/topology-research/nexullance/IT_boost/boost/stage/lib
 LDLIBS = -lboost_graph
 

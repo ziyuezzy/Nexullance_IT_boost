@@ -41,4 +41,7 @@ void compute_all_shortest_paths_single_s_d(const Graph &G, Vertex s, Vertex d, s
 
 void test_shortest_paths(std::string input_graph_path);
 
+std::tuple<double, float> run_Nexullance_IT(std::string input_graph_path, std::string input_matrix_path, int num_step_1);
+
+
 #endif // GRAPH_DEFINITIONS_HPP
