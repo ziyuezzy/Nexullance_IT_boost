@@ -14,10 +14,17 @@ NexullanceIT::NexullanceIT(Graph& _input_graph, const float** _M_R,
     num_edges = boost::num_edges(G);
     num_vertices = boost::num_vertices(G);
     next_path_id = 0;
-    routing_tables = new std::map<path_id, float>*[num_vertices];
+    routing_tables = new std::unordered_map<path_id, float>*[num_vertices];
     for (int i = 0; i < num_vertices; i++) {
-        routing_tables[i] = new std::map<path_id, float>[num_vertices];
+        routing_tables[i] = new std::unordered_map<path_id, float>[num_vertices];
     }
+
+    // initialize data structures
+    all_paths_all_s_d = new std::vector<std::vector<Vertex>>*[num_vertices];
+    for (int i = 0; i < num_vertices; i++) {
+        all_paths_all_s_d[i] = new std::vector<std::vector<Vertex>>[num_vertices];
+    }
+    weightmap = get(edge_weight, G);
 
     // EdgeIterator ei, ei_end;
     // for (tie(ei, ei_end) = boost::edges(G); ei!= ei_end; ei++) {
@@ -38,11 +45,7 @@ NexullanceIT::~NexullanceIT() {
 void NexullanceIT::step_1(float _alpha, float _beta) {
     // first calculate the paths
 
-    property_map< Graph, edge_weight_t >::type weightmap = get(edge_weight, G);
-    std::vector<std::vector<Vertex>>** all_paths_all_s_d = new std::vector<std::vector<Vertex>>*[num_vertices];
-    for (int i = 0; i < boost::num_vertices(G); i++) {
-        all_paths_all_s_d[i] = new std::vector<std::vector<Vertex>>[num_vertices];
-    }
+    
     compute_all_shortest_paths_all_s_d(G, all_paths_all_s_d, weightmap);
 
     if(verbose)
@@ -120,7 +123,7 @@ bool NexullanceIT::step_2(float _alpha, float _beta, float step, float threshold
         std::vector<Vertex> old_path, std::vector<Vertex> new_path, int src, int dst){
         
         float delta_weigth = NULL;
-        std::map<path_id, float>& current_routing_table = routing_tables[src][dst];
+        std::unordered_map<path_id, float>& current_routing_table = routing_tables[src][dst];
 
         auto iter = current_routing_table.find(old_path_id);
         assert(iter != current_routing_table.end());

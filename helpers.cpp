@@ -33,7 +33,7 @@ void compute_all_shortest_paths_all_s_d(const Graph &G, std::vector<std::vector<
 
         // iterate over all sources in the boost graph G
         for(size_t src = 0; src < num_vertices(G); src++){
-            dijkstra_shortest_paths_no_color_map(G, src, weight_map(weightmap));
+            // dijkstra_shortest_paths_no_color_map(G, src, weight_map(weightmap));
             compute_all_shortest_paths_single_source(G, src,  all_s_d_paths[src], weightmap);
         }
 
