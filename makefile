@@ -5,7 +5,7 @@ CXXFLAGS = -std=c++14 -O0 -g -fexceptions
 LDFLAGS = -L/users/ziyzhang/topology-research/nexullance/IT_boost/boost/stage/lib
 LDLIBS = -lboost_graph
 
-TARGET = main
+TARGET = main.exe
 SRCS := $(wildcard *.cpp)  # List of all .cpp files in the current directory
 OBJS := $(SRCS:.cpp=.o)     # Corresponding .o files
 
