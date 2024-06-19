@@ -1,0 +1,6 @@
+*.o
+boost/
+FlameGraph/
+perf.data
+perf.data.old
+out.perf-folded

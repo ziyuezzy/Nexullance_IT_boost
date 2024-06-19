@@ -1,5 +1,1 @@
-*.o
-boost/
-perf.data
-perf.data.old
-out.perf-folded
+CMakeFiles/
