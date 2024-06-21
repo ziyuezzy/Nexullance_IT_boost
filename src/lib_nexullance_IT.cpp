@@ -1,0 +1,92 @@
+#include "lib_nexullance_IT.hpp"
+#include "Nexullance_IT.hpp"
+
+#include <pybind11/pybind11.h>
+#include <pybind11/eigen.h>
+
+
+std::tuple<double, float> run_Nexullance_IT_with_paths(std::string input_graph_path, std::string input_matrix_path, int num_step_1){
+    bool debug = false;
+
+    const float Cap_link = 10;
+    Graph G = read_graphml(input_graph_path, debug);
+    int num_routers=boost::num_vertices(G);
+    // reading matrix from file
+    float** matrix = new float*[num_routers];
+    for (int i = 0; i < num_routers; i++) {
+        matrix[i] = new float[num_routers];
+    }
+    read_matrix(input_matrix_path, debug, matrix, num_routers);
+
+
+    NexullanceIT nexu_it = NexullanceIT(G, const_cast<const float**>(matrix), Cap_link, debug);
+    
+    auto start = std::chrono::high_resolution_clock::now();
+    nexu_it.optimize(num_step_1, 1.0, 1.0, 6, 0.1, 7.0, num_routers);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    
+    // Deallocate the memory for matrix
+    for (int i = 0; i < num_routers; i++) {
+        delete[] matrix[i];
+    }
+    delete[] matrix;
+
+    return std::make_tuple(elapsed.count(), nexu_it.result_max_loads_step_2.back());
+}
+
+std::tuple<double, float> run_Nexullance_IT(int V, Eigen::MatrixX2i arcs, Eigen::MatrixXf input_matrix, int num_step_1=1){
+    bool debug = false;
+
+    const float Cap_link = 10;
+    Graph G = read_graph_from_arcs(V, arcs, debug);
+    int num_routers=boost::num_vertices(G);
+
+
+    // converting the Eigen matrix to a float** matrix
+    float** matrix = new float*[num_routers];
+    for (int i = 0; i < num_routers; i++) {
+        matrix[i] = new float[num_routers];
+    }
+    assert(input_matrix.rows() == num_routers && input_matrix.cols() == num_routers);
+    for (int i = 0; i < num_routers; ++i) {
+        for (int j = 0; j < num_routers; ++j) {
+            matrix[i][j] = input_matrix(i, j);
+        }
+    }
+    //===========
+
+    NexullanceIT nexu_it = NexullanceIT(G, const_cast<const float**>(matrix), Cap_link, debug);
+    
+    auto start = std::chrono::high_resolution_clock::now();
+    nexu_it.optimize(num_step_1, 1.0, 1.0, 6, 0.1, 7.0, num_routers);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    
+    // Deallocate the memory for matrix
+    for (int i = 0; i < num_routers; i++) {
+        delete[] matrix[i];
+    }
+    delete[] matrix;
+
+    return std::make_tuple(elapsed.count(), nexu_it.result_max_loads_step_2.back());
+}
+
+
+
+
+namespace py = pybind11;
+constexpr auto byref = py::return_value_policy::reference_internal;
+
+PYBIND11_MODULE(Nexullance_IT, m) {
+    m.doc() = "calling Nexullance IT";
+
+    m.def("run_Nexullance_IT", &run_Nexullance_IT, "test_func_directly_calling_nexullance_IT");
+    m.def("run_Nexullance_IT_with_paths", &run_Nexullance_IT_with_paths, "test_func_directly_calling_nexullance_IT");
+    // py::class_<MyClass>(m, "MyClass")
+    // .def(py::init<double, double, int>())  
+    // .def("run", &MyClass::run, py::call_guard<py::gil_scoped_release>())
+    // .def_readonly("v_data", &MyClass::v_data, byref)
+    // .def_readonly("v_gamma", &MyClass::v_gamma, byref)
+    // ;
+}

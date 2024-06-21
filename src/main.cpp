@@ -1,11 +1,17 @@
 #include "definitions.hpp"
 #include "Nexullance_IT.hpp"
+#include "lib_nexullance_IT.hpp"
 #include <iostream>
 #include <fstream>
 #include <string>
 
+#include <pybind11/pybind11.h>
+// #include <pybind11/eigen.h>
+// #include "mylib.h"
+namespace py = pybind11;
+// constexpr auto byref = py::return_value_policy::reference_internal;
 
-int main(int argc, char* argv[]) {
+int test_func() {
 
     // if (argc < 4) {
     //     std::cerr << "Usage: " << argv[0] << " <input_graph_path>" << " <input_demand_matrix_path>" << "<debug?>"<< std::endl;
@@ -30,7 +36,7 @@ int main(int argc, char* argv[]) {
             float ave_max_load = 0;
             // iterate ten times:
             for (int i = 0; i < 10; i++) {
-            std::tuple<double, float> result = run_Nexullance_IT(input_graph_path, input_demand_matrix_path, 1);
+            std::tuple<double, float> result = run_Nexullance_IT_with_paths(input_graph_path, input_demand_matrix_path, 1);
             ave_time += std::get<0>(result);  // Access the first element
             ave_max_load += std::get<1>(result);  // Access the second element
             }
@@ -74,3 +80,17 @@ int main(int argc, char* argv[]) {
 
     // return 0;
 }
+
+
+
+// PYBIND11_MODULE(Nexullance_IT, m) { //TODO: move to another cpp file
+//     m.doc() = "optional module docstring";
+
+//     m.def("test_func", &test_func, "test_func_cpp_to_py");
+//     // py::class_<MyClass>(m, "MyClass")
+//     // .def(py::init<double, double, int>())  
+//     // .def("run", &MyClass::run, py::call_guard<py::gil_scoped_release>())
+//     // .def_readonly("v_data", &MyClass::v_data, byref)
+//     // .def_readonly("v_gamma", &MyClass::v_gamma, byref)
+//     // ;
+// }

@@ -1,4 +1,5 @@
 #include "Nexullance_IT.hpp"
+#include "graph_utility.hpp"
 #include <boost/graph/adjacency_list.hpp>
 // #include <boost/property_map/property_map.hpp>
 #include <iostream>
@@ -68,9 +69,7 @@ NexullanceIT::~NexullanceIT() {
 void NexullanceIT::step_1(float _alpha, float _beta) {
     // first calculate the paths
 
-    
     compute_all_shortest_paths_all_s_d(G, all_paths_all_s_d, weightmap);
-
     if(verbose)
         std::cout<<"step 1: computed all shortest paths all s d"<<std::endl;
 
