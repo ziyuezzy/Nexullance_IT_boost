@@ -8,11 +8,11 @@
 
 using path_id = size_t;
 
-class NexullanceIT{
+class Nexullance_IT{
     // _nx_graph: nxGraph, _M_R: np.ndarray, _Cap_remote: float, _verbose:bool=False
     public:
-        NexullanceIT(Graph& _input_graph, const float** _M_R, const float _Cap_remote, const bool _verbose=false);
-        ~NexullanceIT();
+        Nexullance_IT(Graph& _input_graph, const float** _M_R, const float _Cap_remote, const bool _verbose=false);
+        ~Nexullance_IT();
 
         void get_finial_max_load();
         void step_1(float _alpha, float _beta);
@@ -22,6 +22,10 @@ class NexullanceIT{
         std::list<float> result_max_loads_step_1;
         std::list<float> result_max_loads_step_2;
         float final_max_load;
+        size_t num_attempts_step_2 = 0;
+
+        typedef std::map<std::pair<Vertex,Vertex>, std::vector< std::pair<std::vector<Vertex>,float> > > result_routing_table;
+        result_routing_table get_routing_table();
     private:
         Graph G;
         size_t num_edges;
