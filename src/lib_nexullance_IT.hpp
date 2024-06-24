@@ -4,6 +4,7 @@
 #include "definitions.hpp"
 #include "read_data.hpp"
 #include "Nexullance_IT.hpp"
+#include "MD_Nexullance_IT.hpp"
 #include <Eigen/Dense>
 
 
@@ -19,7 +20,7 @@ class Nexullance_IT_interface {
     ~Nexullance_IT_interface();
     double run();
     float get_max_link_load();
-    Nexullance_IT::result_routing_table get_routing_table();
+    result_routing_table get_routing_table();
     size_t get_num_attempts_step_2();
     void set_parameters(float _alpha, float _beta);
 
@@ -29,6 +30,24 @@ class Nexullance_IT_interface {
     float alpha=0.1;
     float beta=7.0;
 
+};
+
+class MD_Nexullance_IT_interface {
+    public:
+    MD_Nexullance_IT_interface(int V, Eigen::MatrixX2i arcs, std::vector<Eigen::MatrixXf> MRs,
+                               std::vector<float> MR_weights, bool debug);
+    ~MD_Nexullance_IT_interface();
+    double run();
+    float get_max_link_load();
+    result_routing_table get_routing_table();
+    size_t get_num_attempts_step_2();
+    void set_parameters(float _alpha, float _beta);
+
+    private:
+    MD_Nexullance_IT *md_nexu_it = nullptr;
+    int _V;
+    float alpha=0.1;
+    float beta=7.0;
 };
 
 #endif

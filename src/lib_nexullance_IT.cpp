@@ -17,7 +17,6 @@ std::tuple<double, float> run_Nexullance_IT_with_paths(std::string input_graph_p
     }
     read_matrix(input_matrix_path, debug, matrix, num_routers);
 
-
     Nexullance_IT nexu_it = Nexullance_IT(G, const_cast<const float**>(matrix), Cap_link, debug);
     
     auto start = std::chrono::high_resolution_clock::now();
@@ -110,16 +109,82 @@ double Nexullance_IT_interface::run(){
 }
 
 float Nexullance_IT_interface::get_max_link_load(){
+    if (nexu_it->result_max_loads_step_2.empty())
+        return nexu_it->result_max_loads_step_1.back();
     return nexu_it->result_max_loads_step_2.back(); 
 }
 
-Nexullance_IT::result_routing_table Nexullance_IT_interface::get_routing_table(){
+result_routing_table Nexullance_IT_interface::get_routing_table(){
     return nexu_it->get_routing_table();
 }
 
 size_t Nexullance_IT_interface::get_num_attempts_step_2(){
     return nexu_it->num_attempts_step_2;
 }
+
+MD_Nexullance_IT_interface::MD_Nexullance_IT_interface(int V, Eigen::MatrixX2i arcs, 
+    std::vector<Eigen::MatrixXf> MRs, std::vector<float> MR_weights, bool debug): _V(V) {
+
+    const float Cap_link = 10;
+    Graph G = read_graph_from_arcs(V, arcs, false);
+    int num_routers=boost::num_vertices(G);
+    assert(V == num_routers);
+
+    size_t M = MRs.size();
+    // converting the Eigen matrix to a float** matrix
+    std::vector<float**> MR_matrices;
+    for (int m = 0; m < M; m++) {
+        MR_matrices.push_back(new float*[num_routers]);
+        for (int j = 0; j < num_routers; j++) {
+            MR_matrices[m][j] = new float[num_routers];
+        }
+    }
+
+    for (int m = 0; m < M; m++) {
+        assert(MRs[m].rows() == num_routers && MRs[m].cols() == num_routers);
+        for (int i = 0; i < num_routers; ++i) {
+            for (int j = 0; j < num_routers; ++j) {
+                MR_matrices[m][i][j] = MRs[m](i, j);
+            }
+        }
+    }
+    //===========
+    md_nexu_it = new MD_Nexullance_IT(G, MR_matrices, MR_weights, Cap_link, debug);
+}
+
+double MD_Nexullance_IT_interface::run(){
+    auto start = std::chrono::high_resolution_clock::now();
+    md_nexu_it->optimize(1, 1.0, 1.0, 6, alpha, beta, _V);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+
+    return elapsed.count();
+}
+
+
+MD_Nexullance_IT_interface::~MD_Nexullance_IT_interface(){
+    delete md_nexu_it;
+}
+
+void MD_Nexullance_IT_interface::set_parameters(float _alpha, float _beta){
+    alpha = _alpha;
+    beta = _beta;
+}
+
+float MD_Nexullance_IT_interface::get_max_link_load(){
+    if (md_nexu_it->result_max_loads_step_2.empty())
+        return md_nexu_it->result_max_loads_step_1.back();
+    return md_nexu_it->result_max_loads_step_2.back(); 
+}
+
+result_routing_table MD_Nexullance_IT_interface::get_routing_table(){
+    return md_nexu_it->get_routing_table();
+}
+
+size_t MD_Nexullance_IT_interface::get_num_attempts_step_2(){
+    return md_nexu_it->num_attempts_step_2;
+}
+
 
 
 namespace py = pybind11;
@@ -145,4 +210,15 @@ PYBIND11_MODULE(Nexullance_IT_cpp, m) {
    .def("get_num_attempts_step_2", &Nexullance_IT_interface::get_num_attempts_step_2)
    .def("set_parameters", &Nexullance_IT_interface::set_parameters)
     ;
+
+    py::class_<MD_Nexullance_IT_interface>(m, "MD_Nexullance_IT_interface")
+   .def(py::init<int, Eigen::MatrixX2i, std::vector<Eigen::MatrixXf>, std::vector<float>, bool>())
+   .def("run", &MD_Nexullance_IT_interface::run)
+   .def("get_max_link_load", &MD_Nexullance_IT_interface::get_max_link_load)
+   .def("get_routing_table", &MD_Nexullance_IT_interface::get_routing_table)
+   .def("get_num_attempts_step_2", &MD_Nexullance_IT_interface::get_num_attempts_step_2)
+   .def("set_parameters", &MD_Nexullance_IT_interface::set_parameters)
+    ;
+
+
 }
