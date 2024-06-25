@@ -167,7 +167,6 @@ bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float thres
 
     while (attempts < max_attempts) {
 
-
         // find the max link load of each m, and then calculate the weighted average
         float weighted_max_load = 0.0;
         std::vector<std::vector<std::pair<size_t, size_t>>> max_load_links;

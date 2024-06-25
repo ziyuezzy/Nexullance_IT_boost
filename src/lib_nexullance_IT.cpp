@@ -171,10 +171,14 @@ void MD_Nexullance_IT_interface::set_parameters(float _alpha, float _beta){
     beta = _beta;
 }
 
-float MD_Nexullance_IT_interface::get_max_link_load(){
+float MD_Nexullance_IT_interface::get_weighted_max_link_load(){
     if (md_nexu_it->result_max_loads_step_2.empty())
         return md_nexu_it->result_max_loads_step_1.back();
     return md_nexu_it->result_max_loads_step_2.back(); 
+}
+
+std::vector<float> MD_Nexullance_IT_interface::get_max_link_loads(){
+    return md_nexu_it->get_max_load_vec();
 }
 
 result_routing_table MD_Nexullance_IT_interface::get_routing_table(){
@@ -214,7 +218,8 @@ PYBIND11_MODULE(Nexullance_IT_cpp, m) {
     py::class_<MD_Nexullance_IT_interface>(m, "MD_Nexullance_IT_interface")
    .def(py::init<int, Eigen::MatrixX2i, std::vector<Eigen::MatrixXf>, std::vector<float>, bool>())
    .def("run", &MD_Nexullance_IT_interface::run)
-   .def("get_max_link_load", &MD_Nexullance_IT_interface::get_max_link_load)
+   .def("get_weighted_max_link_load", &MD_Nexullance_IT_interface::get_weighted_max_link_load)
+   .def("get_max_link_loads", &MD_Nexullance_IT_interface::get_max_link_loads)
    .def("get_routing_table", &MD_Nexullance_IT_interface::get_routing_table)
    .def("get_num_attempts_step_2", &MD_Nexullance_IT_interface::get_num_attempts_step_2)
    .def("set_parameters", &MD_Nexullance_IT_interface::set_parameters)

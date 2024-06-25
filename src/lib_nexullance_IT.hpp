@@ -38,7 +38,8 @@ class MD_Nexullance_IT_interface {
                                std::vector<float> MR_weights, bool debug);
     ~MD_Nexullance_IT_interface();
     double run();
-    float get_max_link_load();
+    float get_weighted_max_link_load();
+    std::vector<float> get_max_link_loads();
     result_routing_table get_routing_table();
     size_t get_num_attempts_step_2();
     void set_parameters(float _alpha, float _beta);

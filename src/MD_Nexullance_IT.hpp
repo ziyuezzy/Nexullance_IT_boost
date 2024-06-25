@@ -24,6 +24,9 @@ class MD_Nexullance_IT{
         size_t num_attempts_step_2 = 0;
 
         result_routing_table get_routing_table();
+        inline std::vector<float> get_max_load_vec(){
+            return max_load_vec;
+        }
     private:
         Graph G;
         size_t num_edges;
