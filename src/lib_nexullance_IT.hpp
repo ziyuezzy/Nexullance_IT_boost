@@ -39,7 +39,7 @@ class MD_Nexullance_IT_interface {
     MD_Nexullance_IT_interface(int V, Eigen::MatrixX2i arcs, std::vector<Eigen::MatrixXf> MRs,
                                std::vector<float> MR_weights, bool debug);
     ~MD_Nexullance_IT_interface();
-    double run(int num_step_2, int method_2_threshold, int method_2_max_attempts);
+    double run(int num_step_2, float method_2_threshold, int method_2_max_attempts, bool cal_least_margin);
     float get_weighted_max_link_load();
     float get_average_path_length();
 

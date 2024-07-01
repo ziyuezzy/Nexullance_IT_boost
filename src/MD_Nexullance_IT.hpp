@@ -16,9 +16,9 @@ class MD_Nexullance_IT{
 
         void get_finial_max_load();
         void step_1(float _alpha, float _beta);
-        bool step_2(float _alpha, float _beta, float step, float threshold=0.001, int min_attempts=50, int max_attempts=100000);
+        bool step_2(float _alpha, float _beta, float step, float threshold=0.001, int min_attempts=50, int max_attempts=100000, bool cal_least_margin = false);
         void optimize(int num_step_1, float alpha_step_1, float beta_step_1, int max_num_step_2, float alpha_step_2, float beta_step_2, 
-                        int method_2_min_attempts, int method_2_threshold, int method_2_max_attempts);
+                        int method_2_min_attempts, float method_2_threshold, int method_2_max_attempts, bool cal_least_margin);
 
         std::list<float> result_max_loads_step_1;
         std::list<float> result_max_loads_step_2;

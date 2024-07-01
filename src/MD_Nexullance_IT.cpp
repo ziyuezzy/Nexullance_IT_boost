@@ -158,21 +158,28 @@ void MD_Nexullance_IT::step_1(float _alpha, float _beta) {
     return;
 }
 
-bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshold, int min_attempts, int max_attempts) {
+bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshold, int min_attempts, int max_attempts, bool cal_least_margin) {
     
     // property_map< Graph, edge_weight_t >::type weightmap = get(edge_weight, G);
     auto rng = std::default_random_engine {};
     int attempts = 0;
     std::list<float> weighted_max_loads;
 
+    // TODO: now it only keep the most recent attempt in memory, maybe also include further attempts in the history?
+    long last_decreased_path_id = -1;
+    long last_increased_path_id = -1;
+
     while (attempts < max_attempts) {
+
 
         // find the max link load of each m, and then calculate the weighted average
         float weighted_max_load = 0.0;
         std::vector<std::vector<std::pair<size_t, size_t>>> max_load_links;
         max_load_links.resize(M);
-        int n = -1;
-        float Gamma_n = 0.0; // to find the maximum of the products of max_load_vec[m] and M_R_weights[m]
+
+        int n = attempts%M; // round robin
+        // int n = -1;
+        // float Gamma_n = 0.0; // to find the maximum of the products of max_load_vec[m] and M_R_weights[m]
         for (int m = 0; m < M; m++) {
             max_load_links[m].clear();
             max_load_vec[m] = 0.0;
@@ -187,18 +194,21 @@ bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float thres
                     }
                 }
             }
-            float Gamma_m = max_load_vec[m]*M_R_weights[m]; // the products of max_load_vec[m] and M_R_weights[m]
-            weighted_max_load += Gamma_m;
-            if (Gamma_m > Gamma_n) { //TODO: if multiple m leads to the same Gamma?
-                n = m;
-                Gamma_n = Gamma_m;
-            }
+            // float Gamma_m = max_load_vec[m]*M_R_weights[m]; // the products of max_load_vec[m] and M_R_weights[m]
+            // weighted_max_load += Gamma_m;            
+            weighted_max_load += max_load_vec[m]*M_R_weights[m];
+            // if (Gamma_m > Gamma_n) { //TODO: if multiple m leads to the same Gamma?
+            //     n = m;
+            //     Gamma_n = Gamma_m;
+            // }
         }
         weighted_max_loads.push_back(weighted_max_load);
-        assert(n != -1);
+        // assert(n != -1);
 
-        if(verbose)
-            std::cout<<"step2, it="<< attempts << ", weighted_max_load = " << weighted_max_load << std::endl;        
+        if(verbose){
+            std::cout<<"step2, it="<< attempts << ", weighted_max_load = " << weighted_max_load << std::endl;
+            std::cout<<"attempting on n = "<< n << std::endl;
+        }  
 
         if((attempts > min_attempts) && (( std::accumulate(std::prev(weighted_max_loads.end(), min_attempts/2), weighted_max_loads.end(), 0.0f)/((float)min_attempts/2) - weighted_max_load)<threshold)){
             if (verbose){
@@ -236,12 +246,12 @@ bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float thres
                     Vertex dst = old_path.back();
 
 
-                    // if(verbose){
-                    //     std::cout<<"step 2: starting with old path: " ;
-                    //     for(auto v: old_path)
-                    //         std::cout<<v<<" ";
-                    //     std::cout<<std::endl;
-                    // }
+                    if(verbose){
+                        std::cout<<"step 2: starting with old path: " ;
+                        for(auto v: old_path)
+                            std::cout<<v<<" ";
+                        std::cout<<std::endl;
+                    }
                             
                     std::vector<std::vector<Vertex>> all_paths;
                     // TODO: assign edge weights in the graph
@@ -261,30 +271,59 @@ bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float thres
                     for(std::vector<Vertex> new_path: all_paths){
                         if(new_path != old_path){
 
-                            // check whether or not there is a max loaded link in the new path
-                            float new_path_max_load = 0.0; //TODO: also check other traffic demand matrices?
-                            for (int l = 0; l < new_path.size() - 1; l++) {
-                                if (link_load_vec[n][new_path[l]][new_path[l+1]] > new_path_max_load) {
-                                    new_path_max_load = link_load_vec[n][new_path[l]][new_path[l+1]];
+                            // check the max loaded link in the new path for every demand matrix
+                            std::vector<float> new_path_max_loads(M, 0.0);
+                            for (int m = 0; m < M; m++) {
+                                for (int l = 0; l < new_path.size() - 1; l++) {
+                                    if (link_load_vec[m][new_path[l]][new_path[l+1]] > new_path_max_loads[m]) {
+                                        new_path_max_loads[m] = link_load_vec[m][new_path[l]][new_path[l+1]];
+                                    }
                                 }
                             }
-                            if(new_path_max_load == max_load_vec[n]){
+
+                            if(new_path_max_loads[n] == max_load_vec[n]){
                                 continue;
                             }
-                            assert(new_path_max_load < max_load_vec[n]);
 
-                            success_attempt = true;
-                            attempts++;
-
-                            // if(verbose){
-                            //     std::cout<<"step 2: starting with new path: " ;
-                            //     for(auto v: new_path)
-                            //         std::cout<<v<<" ";
-                            //     std::cout<<std::endl;
+                            // // check whether or not there is a max loaded link in the new path
+                            // float new_path_max_load = 0.0; //TODO: also check other traffic demand matrices?
+                            // for (int l = 0; l < new_path.size() - 1; l++) {
+                            //     if (link_load_vec[n][new_path[l]][new_path[l+1]] > new_path_max_load) {
+                            //         new_path_max_load = link_load_vec[n][new_path[l]][new_path[l+1]];
+                            //     }
                             // }
-                            
+                            // if(new_path_max_load == max_load_vec[n]){
+                            //     continue;
+                            // }
+                            assert(new_path_max_loads[n] < max_load_vec[n]);
+
+                            std::vector<float> new_path_margins;
+                            new_path_margins.clear();
+                            for (int m = 0; m < M; m++) {
+                                if (M_Rs[m][src][dst]>0){
+                                    new_path_margins.push_back(Cap_remote*(max_load_vec[m]-new_path_max_loads[m])/M_Rs[m][src][dst]);
+                                }
+                            }
+
+                            float least_margin;
+                            if (cal_least_margin){
+                                if (new_path_margins.size() > 0)
+                                    least_margin = *std::min_element(new_path_margins.begin(), new_path_margins.end());
+                                else
+                                    least_margin = 1.0;
+                            }
+
+                            if(verbose){
+                                std::cout<<"step 2: starting with new path: " ;
+                                for(auto v: new_path)
+                                    std::cout<<v<<" ";
+                                std::cout<<std::endl;
+                            }
+                            if(verbose && cal_least_margin){
+                                std::cout<<"least margin = " << least_margin << std::endl;
+                            }
                             //update the paths    
-                            float delta_weigth = NULL;
+                            float delta_weigth = -1.0;
                             std::unordered_map<path_id, float>& current_routing_table = routing_tables[src][dst];
 
                             auto iter = current_routing_table.find(old_path_id);
@@ -292,30 +331,57 @@ bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float thres
                             float old_path_weight = iter->second;
 
                             bool new_path_found = false;
-                            path_id new_path_id = NULL;
+                            long new_path_id = -1;
+                            float prev_path_weight = -1.0;
                             for (auto it = current_routing_table.begin(); it != current_routing_table.end(); ++it) {
                                 if (path_id_to_path[it->first] == new_path) {
                                     new_path_found = true;
                                     new_path_id = it->first;
-                                    float prev_path_weight = it->second;
+                                    prev_path_weight = it->second;
                                     // delta_weigth = std::min(step, std::min(old_path_weight, 1 - it->second)); 
-                                    delta_weigth = std::min(std::min(step, std::min(old_path_weight, 1 - it->second)), 
-                                                    Cap_remote*(max_load_vec[n]-new_path_max_load)/M_Rs[n][src][dst]); 
-                                    current_routing_table.erase(it);
-                                    current_routing_table.insert(std::make_pair(new_path_id, prev_path_weight+delta_weigth));
+                                    if (cal_least_margin){
+                                        delta_weigth = std::min(std::min(step, std::min(old_path_weight, 1 - it->second)), least_margin); 
+                                    }else{
+                                        delta_weigth = std::min(std::min(step, std::min(old_path_weight, 1 - it->second)), 
+                                                        Cap_remote*(max_load_vec[n]-new_path_max_loads[n])/M_Rs[n][src][dst]); 
+                                    }
                                     // it->second += delta_weigth; // TODO: check and change this for Nexullance_IT
                                     break;
                                 }
                             }
-                            if(!new_path_found){
+
+                            if (new_path_found){
+                                assert(new_path_id != -1);
+                                assert(prev_path_weight != -1.0);
+                                if ((old_path_id == last_increased_path_id) && (new_path_id == last_decreased_path_id)){
+                                    if(verbose){
+                                        std::cout<<"step 2: stopped with the new path for avoiding deadlock "<<std::endl;
+                                    }
+                                    continue;
+                                }
+                                current_routing_table.erase(new_path_id);
+                                current_routing_table.insert(std::make_pair(new_path_id, prev_path_weight+delta_weigth));
+
+                            }else{
+                            // if(!new_path_found){
                                 new_path_id = next_path_id++;
                                 path_id_to_path[new_path_id] = new_path;
-                                // delta_weigth = std::min(step, old_path_weight);
-                                delta_weigth = std::min(std::min(step, old_path_weight), 
-                                                    Cap_remote*(max_load_vec[n]-new_path_max_load)/M_Rs[n][src][dst]);
+                                if (cal_least_margin){
+                                    delta_weigth = std::min(std::min(step, old_path_weight), least_margin); 
+                                }else{
+                                    delta_weigth = std::min(std::min(step, old_path_weight), 
+                                                    Cap_remote*(max_load_vec[n]-new_path_max_loads[n])/M_Rs[n][src][dst]); 
+                                }
                                 current_routing_table.insert(std::make_pair(new_path_id, delta_weigth));                
                                 // current_routing_table[new_path_id] = delta_weigth;
                             }
+
+                            success_attempt = true;
+                            attempts++;
+                            assert(delta_weigth != -1.0);
+
+                            last_decreased_path_id = old_path_id;
+                            last_increased_path_id = new_path_id;
 
                             // iterate over the new path and update the link load and path ids
                             for (int l = 0; l < new_path.size() - 1; l++) {
@@ -396,14 +462,14 @@ bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float thres
 
 void MD_Nexullance_IT::optimize(int num_step_1, float alpha_step_1, float beta_step_1, 
                         int max_num_step_2, float alpha_step_2, float beta_step_2, 
-                        int method_2_min_attempts, int method_2_threshold, int method_2_max_attempts){
+                        int method_2_min_attempts, float method_2_threshold, int method_2_max_attempts, bool cal_least_margin){
     assert(num_step_1 >= 1 and "num_step_1 should be a positive integer greater than 1.");
     for (int i = 0; i < num_step_1; i++) {
         step_1(alpha_step_1, beta_step_1);
     }
     float step = 0.5;
     for (int i = 0; i < max_num_step_2; i++) {
-        bool _continues = step_2(alpha_step_2, beta_step_2, step, method_2_threshold, method_2_min_attempts, method_2_max_attempts);
+        bool _continues = step_2(alpha_step_2, beta_step_2, step, method_2_threshold, method_2_min_attempts, method_2_max_attempts, cal_least_margin);
         if(_continues){
         // if(step_2(alpha_step_2, beta_step_2, step, 0.001, method_2_min_attempts)){
             step *= 0.5;
