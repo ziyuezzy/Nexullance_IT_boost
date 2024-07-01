@@ -24,6 +24,7 @@ class Nexullance_IT{
         size_t num_attempts_step_2 = 0;
 
         result_routing_table get_routing_table();
+        float get_average_path_length();
     private:
         Graph G;
         size_t num_edges;

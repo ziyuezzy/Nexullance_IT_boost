@@ -247,12 +247,12 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                     Vertex dst = old_path.back();
 
 
-                    // if(verbose){
-                    //     std::cout<<"step 2: starting with old path: " ;
-                    //     for(auto v: old_path)
-                    //         std::cout<<v<<" ";
-                    //     std::cout<<std::endl;
-                    // }
+                    if(verbose){
+                        std::cout<<"step 2: starting with old path: " ;
+                        for(auto v: old_path)
+                            std::cout<<v<<" ";
+                        std::cout<<std::endl;
+                    }
                             
                     std::vector<std::vector<Vertex>> all_paths;
                     compute_all_shortest_paths_single_s_d(G, src, dst, all_paths, weightmap);
@@ -279,12 +279,12 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                             success_attempt = true;
                             attempts++;
 
-                            // if(verbose){
-                            //     std::cout<<"step 2: starting with new path: " ;
-                            //     for(auto v: new_path)
-                            //         std::cout<<v<<" ";
-                            //     std::cout<<std::endl;
-                            // }
+                            if(verbose){
+                                std::cout<<"step 2: starting with new path: " ;
+                                for(auto v: new_path)
+                                    std::cout<<v<<" ";
+                                std::cout<<std::endl;
+                            }
                             
                             //update the paths    
                             float delta_weigth = NULL;
@@ -297,12 +297,16 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                             bool new_path_found = false;
                             path_id new_path_id = NULL;
                             for (auto it = current_routing_table.begin(); it != current_routing_table.end(); ++it) {
-                                if (path_id_to_path[it->second] == new_path) {
+                                if (path_id_to_path[it->first] == new_path) {
                                     new_path_found = true;
                                     new_path_id = it->first;
+                                    float prev_path_weight = it->second;
                                     // delta_weigth = std::min(step, std::min(old_path_weight, 1 - it->second)); 
-                                    delta_weigth = std::min(std::min(step, std::min(old_path_weight, 1 - it->second)), Cap_remote*(max_load-new_path_max_load)/M_R[src][dst]); 
-                                    it->second += delta_weigth;
+                                    delta_weigth = std::min(std::min(step, std::min(old_path_weight, 1 - prev_path_weight)),
+                                     Cap_remote*(max_load-new_path_max_load)/M_R[src][dst]); 
+                                    current_routing_table.erase(it);
+                                    current_routing_table.insert(std::make_pair(new_path_id, prev_path_weight+delta_weigth));
+                                    // it->second += delta_weigth; // this does not directly write into the data of "routing_tables"
                                     break;
                                 }
                             }
@@ -310,8 +314,10 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                                 new_path_id = next_path_id++;
                                 path_id_to_path[new_path_id] = new_path;
                                 // delta_weigth = std::min(step, old_path_weight);
-                                delta_weigth = std::min(std::min(step, old_path_weight), Cap_remote*(max_load-new_path_max_load)/M_R[src][dst]);
-                                current_routing_table[new_path_id] = delta_weigth;
+                                delta_weigth = std::min(std::min(step, old_path_weight),
+                                                        Cap_remote*(max_load-new_path_max_load)/M_R[src][dst]);
+                                current_routing_table.insert(std::make_pair(new_path_id, delta_weigth));                
+                                // current_routing_table[new_path_id] = delta_weigth;
                             }
 
                             // iterate over the new path and update the link load and path ids
@@ -338,7 +344,10 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                                     link_path_ids[e.m_source][e.m_target].push_back(new_path_id);
                             }
 
-                            current_routing_table[old_path_id] -= delta_weigth;
+                            current_routing_table.erase(old_path_id);
+                            current_routing_table.insert(std::make_pair(old_path_id, old_path_weight-delta_weigth));
+                            // current_routing_table[old_path_id] -= delta_weigth;
+
                             // iterate over the old path and update the link load and path ids
                             for (int l = 0; l < old_path.size() - 1; l++) {
                                 Vertex u = old_path[l];
@@ -416,21 +425,38 @@ void Nexullance_IT::optimize(int num_step_1, float alpha_step_1, float beta_step
 
 
 result_routing_table Nexullance_IT::get_routing_table(){
-    result_routing_table* result = new result_routing_table();
+    result_routing_table result = result_routing_table();
     // iterate over "routing_tables" and convert it to "result_routing_table"
     for (int s = 0; s < num_vertices; s++) {
         for (int d = 0; d < num_vertices; d++) {
             if (s==d)
                 continue;
 
-            std::vector< std::pair< std::vector<Vertex>,float> >* paths = new std::vector< std::pair< std::vector<Vertex>,float> >();
+            std::vector< std::pair< std::vector<Vertex>,float> > paths = std::vector< std::pair< std::vector<Vertex>,float> >();
             for (auto item: routing_tables[s][d]) {
                 std::vector<Vertex> path = path_id_to_path[item.first];
                 float weight = item.second;
-                paths->push_back(std::make_pair(path, weight));
+                paths.push_back(std::make_pair(path, weight));
             }
-            result->insert(std::make_pair(std::make_pair(s,d), *paths));
+            result.insert(std::make_pair(std::make_pair(s,d), paths));
         }
     }
-    return *result;
+    return result;
+}
+
+float Nexullance_IT::get_average_path_length(){
+    float ave = 0;
+    for (int s = 0; s < num_vertices; s++) {
+        for (int d = 0; d < num_vertices; d++) {
+            if (s==d)
+                continue;
+            for (auto item: routing_tables[s][d]) {
+                std::vector<Vertex> path = path_id_to_path[item.first];
+                float weight = item.second;
+                ave += path.size()*weight;
+            }
+        }
+    }
+    ave = ave/num_vertices/num_vertices;
+    return ave;
 }

@@ -7,9 +7,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Compiler flags
 # For debugging
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -fexceptions")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -fexceptions")
 # For release
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ffast-math -Wall -pedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ffast-math -Wall -pedantic")
 
 set(Python3_EXECUTABLE /users/ziyzhang/miniconda3/envs/gt/bin/python3)
 find_package(Python3 3.12 REQUIRED COMPONENTS Interpreter Development)

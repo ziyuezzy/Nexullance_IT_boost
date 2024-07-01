@@ -21,6 +21,8 @@ class Nexullance_IT_interface {
     double run();
     float get_max_link_load();
     result_routing_table get_routing_table();
+    float get_average_path_length();
+
     size_t get_num_attempts_step_2();
     void set_parameters(float _alpha, float _beta);
 
@@ -37,8 +39,10 @@ class MD_Nexullance_IT_interface {
     MD_Nexullance_IT_interface(int V, Eigen::MatrixX2i arcs, std::vector<Eigen::MatrixXf> MRs,
                                std::vector<float> MR_weights, bool debug);
     ~MD_Nexullance_IT_interface();
-    double run();
+    double run(int num_step_2, int method_2_threshold, int method_2_max_attempts);
     float get_weighted_max_link_load();
+    float get_average_path_length();
+
     std::vector<float> get_max_link_loads();
     result_routing_table get_routing_table();
     size_t get_num_attempts_step_2();

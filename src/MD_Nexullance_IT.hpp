@@ -17,13 +17,15 @@ class MD_Nexullance_IT{
         void get_finial_max_load();
         void step_1(float _alpha, float _beta);
         bool step_2(float _alpha, float _beta, float step, float threshold=0.001, int min_attempts=50, int max_attempts=100000);
-        void optimize(int num_step_1, float alpha_step_1, float beta_step_1, int max_num_step_2, float alpha_step_2, float beta_step_2, int method_2_min_attempts);
+        void optimize(int num_step_1, float alpha_step_1, float beta_step_1, int max_num_step_2, float alpha_step_2, float beta_step_2, 
+                        int method_2_min_attempts, int method_2_threshold, int method_2_max_attempts);
 
         std::list<float> result_max_loads_step_1;
         std::list<float> result_max_loads_step_2;
         size_t num_attempts_step_2 = 0;
 
         result_routing_table get_routing_table();
+        float get_average_path_length();
         inline std::vector<float> get_max_load_vec(){
             return max_load_vec;
         }

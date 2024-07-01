@@ -118,6 +118,10 @@ result_routing_table Nexullance_IT_interface::get_routing_table(){
     return nexu_it->get_routing_table();
 }
 
+float Nexullance_IT_interface::get_average_path_length(){   
+    return nexu_it->get_average_path_length();
+}
+
 size_t Nexullance_IT_interface::get_num_attempts_step_2(){
     return nexu_it->num_attempts_step_2;
 }
@@ -152,9 +156,10 @@ MD_Nexullance_IT_interface::MD_Nexullance_IT_interface(int V, Eigen::MatrixX2i a
     md_nexu_it = new MD_Nexullance_IT(G, MR_matrices, MR_weights, Cap_link, debug);
 }
 
-double MD_Nexullance_IT_interface::run(){
+double MD_Nexullance_IT_interface::run(int num_step_2, int method_2_threshold, int method_2_max_attempts){
     auto start = std::chrono::high_resolution_clock::now();
-    md_nexu_it->optimize(1, 1.0, 1.0, 6, alpha, beta, _V);
+    // md_nexu_it->optimize(1, 1.0, 1.0, 4, alpha, beta, _V, method_2_threshold, method_2_max_attempts);
+    md_nexu_it->optimize(1, 1.0, 1.0, num_step_2, alpha, beta, _V, method_2_threshold, method_2_max_attempts);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
 
@@ -185,6 +190,11 @@ result_routing_table MD_Nexullance_IT_interface::get_routing_table(){
     return md_nexu_it->get_routing_table();
 }
 
+float MD_Nexullance_IT_interface::get_average_path_length(){   
+    return md_nexu_it->get_average_path_length();
+}
+
+
 size_t MD_Nexullance_IT_interface::get_num_attempts_step_2(){
     return md_nexu_it->num_attempts_step_2;
 }
@@ -211,6 +221,7 @@ PYBIND11_MODULE(Nexullance_IT_cpp, m) {
    .def("run", &Nexullance_IT_interface::run)
    .def("get_max_link_load", &Nexullance_IT_interface::get_max_link_load)
    .def("get_routing_table", &Nexullance_IT_interface::get_routing_table)
+   .def("get_average_path_length", &Nexullance_IT_interface::get_average_path_length)
    .def("get_num_attempts_step_2", &Nexullance_IT_interface::get_num_attempts_step_2)
    .def("set_parameters", &Nexullance_IT_interface::set_parameters)
     ;
@@ -221,6 +232,7 @@ PYBIND11_MODULE(Nexullance_IT_cpp, m) {
    .def("get_weighted_max_link_load", &MD_Nexullance_IT_interface::get_weighted_max_link_load)
    .def("get_max_link_loads", &MD_Nexullance_IT_interface::get_max_link_loads)
    .def("get_routing_table", &MD_Nexullance_IT_interface::get_routing_table)
+   .def("get_average_path_length", &MD_Nexullance_IT_interface::get_average_path_length)
    .def("get_num_attempts_step_2", &MD_Nexullance_IT_interface::get_num_attempts_step_2)
    .def("set_parameters", &MD_Nexullance_IT_interface::set_parameters)
     ;
