@@ -301,9 +301,9 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                                     new_path_found = true;
                                     new_path_id = it->first;
                                     float prev_path_weight = it->second;
-                                    // delta_weigth = std::min(step, std::min(old_path_weight, 1 - it->second)); 
-                                    delta_weigth = std::min(std::min(step, std::min(old_path_weight, 1 - prev_path_weight)),
-                                     Cap_remote*(max_load-new_path_max_load)/M_R[src][dst]); 
+                                    delta_weigth = std::min(step, std::min(old_path_weight, 1 - it->second)); 
+                                    // delta_weigth = std::min(std::min(step, std::min(old_path_weight, 1 - prev_path_weight)),
+                                    //  Cap_remote*(max_load-new_path_max_load)/M_R[src][dst]); 
                                     current_routing_table.erase(it);
                                     current_routing_table.insert(std::make_pair(new_path_id, prev_path_weight+delta_weigth));
                                     // it->second += delta_weigth; // this does not directly write into the data of "routing_tables"
@@ -313,9 +313,9 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                             if(!new_path_found){
                                 new_path_id = next_path_id++;
                                 path_id_to_path[new_path_id] = new_path;
-                                // delta_weigth = std::min(step, old_path_weight);
-                                delta_weigth = std::min(std::min(step, old_path_weight),
-                                                        Cap_remote*(max_load-new_path_max_load)/M_R[src][dst]);
+                                delta_weigth = std::min(step, old_path_weight);
+                                // delta_weigth = std::min(std::min(step, old_path_weight),
+                                //                         Cap_remote*(max_load-new_path_max_load)/M_R[src][dst]);
                                 current_routing_table.insert(std::make_pair(new_path_id, delta_weigth));                
                                 // current_routing_table[new_path_id] = delta_weigth;
                             }
