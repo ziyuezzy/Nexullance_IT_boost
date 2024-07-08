@@ -7,7 +7,6 @@
 #include <numeric>
 #include <iterator>
 #include <random>
-
 // #include <pybind11/pybind11.h>
 // #include <pybind11/stl.h>
 
@@ -146,15 +145,24 @@ void Nexullance_IT::step_1(float _alpha, float _beta) {
 
 bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshold, int min_attempts, int max_attempts) {
     
-    // property_map< Graph, edge_weight_t >::type weightmap = get(edge_weight, G);
-    auto rng = std::default_random_engine {};
+    // // Create a random device
+    // std::random_device rd;
+    // // Generate a seed value
+    // auto seed = rd();
+    // // Print the seed value
+    // std::cout << "Seed: " << seed << std::endl;
+    // // Create and seed the random engine with the generated seed
+    // std::default_random_engine rng;
+    // rng.seed(seed);
+
+    std::default_random_engine rng;
+    
     int attempts = 0;
     std::list<float> max_loads;
     float max_load = 0;
 
 
     while (attempts < max_attempts) {
-
 
         // find the max value of link_load, and store the corressponding links (i,j)
         std::vector<std::pair<size_t, size_t>> max_load_links;
@@ -202,7 +210,7 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
         // max_load = maxElement->second;
         max_loads.push_back(max_load);
 
-        if((attempts > min_attempts) && (( std::accumulate(std::prev(max_loads.end(), min_attempts/2), max_loads.end(), 0.0f)/((float)min_attempts/2) - max_load)<threshold)){
+        if((attempts > min_attempts) && (( std::accumulate(std::prev(max_loads.end(), min_attempts/2), max_loads.end(), 0.0f)/((float)min_attempts) - max_load)<threshold)){
             if (verbose){
                 std::cout<<"step 2: low progress, terminating for step = "<< step <<std::endl;
                 std::cout<<"step 2: found max link load" << max_load <<std::endl;
@@ -216,13 +224,9 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
 
         // for (int i = 0; i < num_vertices; i++) { // order of loops??
         //     for (int j = 0; j < num_vertices; j++) {
-        //     // for (auto iter = link_load.begin(); iter != link_load.end(); ++iter) {
-        //         // main function body start from here:
-        //         // if (iter->second < max_load){
-        //         //     continue;
-        //         // }
-                
-        //         // Edge e = iter->first;
+        //     if (link_load[i][j] < max_load){
+        //         continue;
+        //     }
         for(auto link: max_load_links){
                 int i = link.first;
                 int j = link.second;
@@ -301,9 +305,9 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                                     new_path_found = true;
                                     new_path_id = it->first;
                                     float prev_path_weight = it->second;
-                                    delta_weigth = std::min(step, std::min(old_path_weight, 1 - it->second)); 
-                                    // delta_weigth = std::min(std::min(step, std::min(old_path_weight, 1 - prev_path_weight)),
-                                    //  Cap_remote*(max_load-new_path_max_load)/M_R[src][dst]); 
+                                    // delta_weigth = std::min(step, std::min(old_path_weight, 1 - it->second)); 
+                                    delta_weigth = std::min(std::min(step, std::min(old_path_weight, 1 - prev_path_weight)),
+                                     Cap_remote*(max_load-new_path_max_load)/M_R[src][dst]); 
                                     current_routing_table.erase(it);
                                     current_routing_table.insert(std::make_pair(new_path_id, prev_path_weight+delta_weigth));
                                     // it->second += delta_weigth; // this does not directly write into the data of "routing_tables"
@@ -313,9 +317,9 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                             if(!new_path_found){
                                 new_path_id = next_path_id++;
                                 path_id_to_path[new_path_id] = new_path;
-                                delta_weigth = std::min(step, old_path_weight);
-                                // delta_weigth = std::min(std::min(step, old_path_weight),
-                                //                         Cap_remote*(max_load-new_path_max_load)/M_R[src][dst]);
+                                // delta_weigth = std::min(step, old_path_weight);
+                                delta_weigth = std::min(std::min(step, old_path_weight),
+                                                        Cap_remote*(max_load-new_path_max_load)/M_R[src][dst]);
                                 current_routing_table.insert(std::make_pair(new_path_id, delta_weigth));                
                                 // current_routing_table[new_path_id] = delta_weigth;
                             }
@@ -343,9 +347,10 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                                 if(!new_path_found)
                                     link_path_ids[e.m_source][e.m_target].push_back(new_path_id);
                             }
+                            current_routing_table[old_path_id] -= delta_weigth;
 
-                            current_routing_table.erase(old_path_id);
-                            current_routing_table.insert(std::make_pair(old_path_id, old_path_weight-delta_weigth));
+                            // current_routing_table.erase(old_path_id);
+                            // current_routing_table.insert(std::make_pair(old_path_id, old_path_weight-delta_weigth));
                             // current_routing_table[old_path_id] -= delta_weigth;
 
                             // iterate over the old path and update the link load and path ids
