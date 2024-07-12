@@ -134,17 +134,17 @@ MD_Nexullance_IT_interface::MD_Nexullance_IT_interface(int V, Eigen::MatrixX2i a
     int num_routers=boost::num_vertices(G);
     assert(V == num_routers);
 
-    size_t M = MRs.size();
+    _M = MRs.size();
     // converting the Eigen matrix to a float** matrix
     std::vector<float**> MR_matrices;
-    for (int m = 0; m < M; m++) {
+    for (int m = 0; m < _M; m++) {
         MR_matrices.push_back(new float*[num_routers]);
         for (int j = 0; j < num_routers; j++) {
             MR_matrices[m][j] = new float[num_routers];
         }
     }
 
-    for (int m = 0; m < M; m++) {
+    for (int m = 0; m < _M; m++) {
         assert(MRs[m].rows() == num_routers && MRs[m].cols() == num_routers);
         for (int i = 0; i < num_routers; ++i) {
             for (int j = 0; j < num_routers; ++j) {
@@ -159,7 +159,7 @@ MD_Nexullance_IT_interface::MD_Nexullance_IT_interface(int V, Eigen::MatrixX2i a
 double MD_Nexullance_IT_interface::run(int num_step_2, float method_2_threshold, int method_2_max_attempts, bool cal_least_margin){
     auto start = std::chrono::high_resolution_clock::now();
     // md_nexu_it->optimize(1, 1.0, 1.0, 4, alpha, beta, _V, method_2_threshold, method_2_max_attempts);
-    md_nexu_it->optimize(1, 1.0, 1.0, num_step_2, alpha, beta, _V, method_2_threshold, method_2_max_attempts, cal_least_margin);
+    md_nexu_it->optimize(1, 1.0, 1.0, num_step_2, alpha, beta, _V*_M, method_2_threshold, method_2_max_attempts, cal_least_margin);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
 

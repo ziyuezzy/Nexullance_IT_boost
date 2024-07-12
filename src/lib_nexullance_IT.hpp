@@ -51,6 +51,7 @@ class MD_Nexullance_IT_interface {
     private:
     MD_Nexullance_IT *md_nexu_it = nullptr;
     int _V;
+    size_t _M;
     float alpha=0.1;
     float beta=7.0;
 };

@@ -71,6 +71,7 @@ Nexullance_IT::~Nexullance_IT() {
 void Nexullance_IT::step_1(float _alpha, float _beta) {
     // first calculate the paths
 
+    
     compute_all_shortest_paths_all_s_d(G, all_paths_all_s_d, weightmap);
     // if(verbose)
     //     std::cout<<"step 1: computed all shortest paths all s d"<<std::endl;
@@ -145,18 +146,7 @@ void Nexullance_IT::step_1(float _alpha, float _beta) {
 
 bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshold, int min_attempts, int max_attempts) {
     
-    // // Create a random device
-    // std::random_device rd;
-    // // Generate a seed value
-    // auto seed = rd();
-    // // Print the seed value
-    // std::cout << "Seed: " << seed << std::endl;
-    // // Create and seed the random engine with the generated seed
-    // std::default_random_engine rng;
-    // rng.seed(seed);
-
-    std::default_random_engine rng;
-    
+    auto rng = std::default_random_engine {};
     int attempts = 0;
     std::list<float> max_loads;
     float max_load = 0;
@@ -164,40 +154,13 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
 
     while (attempts < max_attempts) {
 
-        // find the max value of link_load, and store the corressponding links (i,j)
-        std::vector<std::pair<size_t, size_t>> max_load_links;
         float max_load = 0.0;
         for (int i = 0; i < num_vertices; i++) { // order of loops??
             for (int j = 0; j < num_vertices; j++) {
-                if (link_load[i][j] > max_load) {
+                if (link_load[i][j] > max_load)
                     max_load = link_load[i][j];
-                    max_load_links.clear();
-                    max_load_links.push_back(std::make_pair(i,j));
-                } else if (link_load[i][j] == max_load) {
-                    max_load_links.push_back(std::make_pair(i,j));
-                }
             }
         }
-
-
-        // std::multimap<float, std::pair<size_t, size_t>, std::greater<float>> sorted_loads;
-        // for (int i = 0; i < num_vertices; i++) { // order of loops??
-        //     for (int j = 0; j < num_vertices; j++) {
-        //         sorted_loads.insert(std::make_pair(link_load[i][j], std::make_pair(i,j)));
-        //     }
-        // }
-        // auto first_iter = sorted_loads.begin();
-        // float max_load = first_iter->first;
-        // std::vector<std::pair<size_t, size_t>> max_load_links;
-        // max_load_links.push_back(first_iter->second);
-        // for (auto iter = std::next(first_iter); iter != sorted_loads.end(); ++iter) {
-        //     if (iter->first == max_load) {
-        //         max_load_links.push_back(iter->second);
-        //     } else{
-        //         break;
-        //     }
-        // }
-
 
         if(verbose)
             std::cout<<"step2, it="<< attempts << ", max_load = " << max_load << std::endl;        
@@ -219,20 +182,13 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
             num_attempts_step_2 += attempts;
             return true;
         }
-
         bool success_attempt = false;
 
-        // for (int i = 0; i < num_vertices; i++) { // order of loops??
-        //     for (int j = 0; j < num_vertices; j++) {
-        //     if (link_load[i][j] < max_load){
-        //         continue;
-        //     }
-        for(auto link: max_load_links){
-                int i = link.first;
-                int j = link.second;
-
-                assert(link_load[i][j] == max_load);
-
+        for (int i = 0; i < num_vertices; i++) { // order of loops??
+            for (int j = 0; j < num_vertices; j++) {
+                if (link_load[i][j] < max_load){
+                    continue;
+                }
                 std::vector<path_id> path_ids = link_path_ids[i][j];
 
                 std::multimap<float, path_id, std::greater<float>> sorted_path_ids;
@@ -250,7 +206,6 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                     Vertex src = old_path.front();
                     Vertex dst = old_path.back();
 
-
                     if(verbose){
                         std::cout<<"step 2: starting with old path: " ;
                         for(auto v: old_path)
@@ -261,24 +216,14 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                     std::vector<std::vector<Vertex>> all_paths;
                     compute_all_shortest_paths_single_s_d(G, src, dst, all_paths, weightmap);
 
-                    // if(verbose)
-                    //     std::cout<<"step 2: found " << all_paths.size() << " new paths for s = "<<src<<" d = "<<dst<<std::endl;
+                        // if(verbose)
+                        //     std::cout<<"step 2: found " << all_paths.size() << " new paths for s = "<<src<<" d = "<<dst<<std::endl;
 
                     std::shuffle(std::begin(all_paths), std::end(all_paths), rng);
 
                     for(std::vector<Vertex> new_path: all_paths){
                         if(new_path != old_path){
 
-                            // check whether or not there is a max loaded link in the new path
-                            float new_path_max_load = 0.0;
-                            for (int l = 0; l < new_path.size() - 1; l++) {
-                                if (link_load[new_path[l]][new_path[l+1]] > new_path_max_load) {
-                                    new_path_max_load = link_load[new_path[l]][new_path[l+1]];
-                                }
-                            }
-                            if(new_path_max_load == max_load){
-                                continue;
-                            }
 
                             success_attempt = true;
                             attempts++;
@@ -305,9 +250,7 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                                     new_path_found = true;
                                     new_path_id = it->first;
                                     float prev_path_weight = it->second;
-                                    // delta_weigth = std::min(step, std::min(old_path_weight, 1 - it->second)); 
-                                    delta_weigth = std::min(std::min(step, std::min(old_path_weight, 1 - prev_path_weight)),
-                                     Cap_remote*(max_load-new_path_max_load)/M_R[src][dst]); 
+                                    delta_weigth = std::min(step, std::min(old_path_weight, 1 - it->second)); 
                                     current_routing_table.erase(it);
                                     current_routing_table.insert(std::make_pair(new_path_id, prev_path_weight+delta_weigth));
                                     // it->second += delta_weigth; // this does not directly write into the data of "routing_tables"
@@ -317,9 +260,7 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                             if(!new_path_found){
                                 new_path_id = next_path_id++;
                                 path_id_to_path[new_path_id] = new_path;
-                                // delta_weigth = std::min(step, old_path_weight);
-                                delta_weigth = std::min(std::min(step, old_path_weight),
-                                                        Cap_remote*(max_load-new_path_max_load)/M_R[src][dst]);
+                                delta_weigth = std::min(step, old_path_weight);
                                 current_routing_table.insert(std::make_pair(new_path_id, delta_weigth));                
                                 // current_routing_table[new_path_id] = delta_weigth;
                             }
@@ -330,13 +271,6 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                                 Vertex v = new_path[l+1];
                                 Edge e = boost::edge(u, v, G).first; // the boost::edge(u, v, G) returns a pair<Edge edge(u,v), bool found>
                                 link_load[e.m_source][e.m_target] += delta_weigth*M_R[src][dst]/Cap_remote; // TODO: to further optimize, divide Cap_remote on the M_R at the beginning?
-
-                                // // update max_load
-                                // if (link_load[e.m_source][e.m_target] > max_load) {
-                                //     max_load = link_load[e.m_source][e.m_target];
-                                // }
-                                // //================
-
                                 // // compare with max_load, update if this is higher
                                 // if (link_load[e.m_source][e.m_target] > (max_load + 0.001)) {
                                 //     assert(false &&"should not happen");
@@ -347,11 +281,9 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                                 if(!new_path_found)
                                     link_path_ids[e.m_source][e.m_target].push_back(new_path_id);
                             }
-                            current_routing_table[old_path_id] -= delta_weigth;
-
-                            // current_routing_table.erase(old_path_id);
-                            // current_routing_table.insert(std::make_pair(old_path_id, old_path_weight-delta_weigth));
-                            // current_routing_table[old_path_id] -= delta_weigth;
+                                // current_routing_table[old_path_id] -= delta_weigth;
+                                current_routing_table.erase(old_path_id);
+                                current_routing_table.insert(std::make_pair(old_path_id, old_path_weight-delta_weigth));
 
                             // iterate over the old path and update the link load and path ids
                             for (int l = 0; l < old_path.size() - 1; l++) {
@@ -392,7 +324,7 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                     continue;
                 }
             }
-        // }
+        }
 
         if(!success_attempt){
             if(verbose)

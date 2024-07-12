@@ -160,6 +160,9 @@ void MD_Nexullance_IT::step_1(float _alpha, float _beta) {
 
 bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshold, int min_attempts, int max_attempts, bool cal_least_margin) {
     
+    if (verbose)
+        std::cout<<"step 2: starting for step = "<< step <<std::endl;
+        
     // property_map< Graph, edge_weight_t >::type weightmap = get(edge_weight, G);
     auto rng = std::default_random_engine {};
     int attempts = 0;
@@ -213,7 +216,9 @@ bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float thres
         if((attempts > min_attempts) && (( std::accumulate(std::prev(weighted_max_loads.end(), min_attempts/2), weighted_max_loads.end(), 0.0f)/((float)min_attempts/2) - weighted_max_load)<threshold)){
             if (verbose){
                 std::cout<<"step 2: low progress, terminating for step = "<< step <<std::endl;
-                std::cout<<"step 2: found max link load" << max_load_vec[n] << " for demand matrix " << n <<std::endl;
+                std::cout<<"average of previous "<< min_attempts/2 <<" steps = "<< 
+                    std::accumulate(std::prev(weighted_max_loads.end(), min_attempts/2), weighted_max_loads.end(), 0.0f)/((float)min_attempts/2) <<std::endl;
+                // std::cout<<"step 2: found max link load" << max_load_vec[n] << " for demand matrix " << n <<std::endl;
             }
             result_max_loads_step_2.push_back(weighted_max_load);
             num_attempts_step_2 += attempts;
@@ -246,12 +251,12 @@ bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float thres
                     Vertex dst = old_path.back();
 
 
-                    if(verbose){
-                        std::cout<<"step 2: starting with old path: " ;
-                        for(auto v: old_path)
-                            std::cout<<v<<" ";
-                        std::cout<<std::endl;
-                    }
+                    // if(verbose){
+                    //     std::cout<<"step 2: starting with old path: " ;
+                    //     for(auto v: old_path)
+                    //         std::cout<<v<<" ";
+                    //     std::cout<<std::endl;
+                    // }
                             
                     std::vector<std::vector<Vertex>> all_paths;
                     // TODO: assign edge weights in the graph
@@ -298,30 +303,30 @@ bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float thres
                             assert(new_path_max_loads[n] < max_load_vec[n]);
 
                             std::vector<float> new_path_margins;
-                            new_path_margins.clear();
-                            for (int m = 0; m < M; m++) {
-                                if (M_Rs[m][src][dst]>0){
-                                    new_path_margins.push_back(Cap_remote*(max_load_vec[m]-new_path_max_loads[m])/M_Rs[m][src][dst]);
-                                }
-                            }
 
                             float least_margin;
                             if (cal_least_margin){
+                                new_path_margins.clear();
+                                for (int m = 0; m < M; m++) {
+                                    if (M_Rs[m][src][dst]>0){
+                                        new_path_margins.push_back(Cap_remote*(max_load_vec[m]-new_path_max_loads[m])/M_Rs[m][src][dst]);
+                                    }
+                                }
                                 if (new_path_margins.size() > 0)
                                     least_margin = *std::min_element(new_path_margins.begin(), new_path_margins.end());
                                 else
                                     least_margin = 1.0;
                             }
 
-                            if(verbose){
-                                std::cout<<"step 2: starting with new path: " ;
-                                for(auto v: new_path)
-                                    std::cout<<v<<" ";
-                                std::cout<<std::endl;
-                            }
-                            if(verbose && cal_least_margin){
-                                std::cout<<"least margin = " << least_margin << std::endl;
-                            }
+                            // if(verbose){
+                            //     std::cout<<"step 2: starting with new path: " ;
+                            //     for(auto v: new_path)
+                            //         std::cout<<v<<" ";
+                            //     std::cout<<std::endl;
+                            // }
+                            // if(verbose && cal_least_margin){
+                            //     std::cout<<"least margin = " << least_margin << std::endl;
+                            // }
                             //update the paths    
                             float delta_weigth = -1.0;
                             std::unordered_map<path_id, float>& current_routing_table = routing_tables[src][dst];
