@@ -261,12 +261,15 @@ bool NexullanceIT::step_2(float _alpha, float _beta, float step, float threshold
                         bool new_path_found = false;
                         path_id new_path_id = NULL;
                         for (auto it = current_routing_table.begin(); it != current_routing_table.end(); ++it) {
-                            if (path_id_to_path[it->second] == new_path) {
+                            if (path_id_to_path[it->first] == new_path) {
                                 new_path_found = true;
                                 new_path_id = it->first;
+                                float prev_path_weight = it->second;
                                 delta_weigth = std::min(step, std::min(old_path_weight, 1 - it->second)); 
                                 // delta_weigth = std::min(std::min(step, std::min(old_path_weight, 1 - it->second)), Cap_remote*(max_load-new_path_max_load)/M_R[src][dst]); 
-                                it->second += delta_weigth;
+                                current_routing_table.erase(it);
+                                current_routing_table[new_path_id] = prev_path_weight+delta_weigth;
+                                // it->second += delta_weigth;
                                 break;
                             }
                         }
