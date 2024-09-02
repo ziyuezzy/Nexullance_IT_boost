@@ -223,8 +223,6 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
 
                     for(std::vector<Vertex> new_path: all_paths){
                         if(new_path != old_path){
-
-
                             success_attempt = true;
                             attempts++;
 
