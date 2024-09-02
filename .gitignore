@@ -1,3 +1,5 @@
 CMakeFiles/
-debug_*/
 build/
+debug_*/
+test_*.ipynb
+FlameGraph/

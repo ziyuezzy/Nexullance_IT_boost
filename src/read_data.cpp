@@ -4,7 +4,7 @@
 #include <boost/property_map/dynamic_property_map.hpp>  // For dynamic_properties
 #include <boost/property_map/property_map.hpp>          // For property
 
-#include "definitions.hpp"
+#include "read_data.hpp"
 
 Graph read_graphml(std::string graphmlFile, bool print) {
 
@@ -63,6 +63,73 @@ Graph read_graphml(std::string graphmlFile, bool print) {
     }
     return g;
 }
+
+Graph read_graph_from_arcs(int V, Eigen::MatrixX2i arcs, bool print) {
+    // the input is a matrix (np array of size (E, 2)) that describes the arcs of the graph
+
+    assert(arcs.rows() > 0 && "the matrix is empty");
+    // assert(arcs.cols() == 2 && "the matrix should have two columns");
+   
+
+    // Create a graph object
+    Graph g;
+    // Setup dynamic properties to read vertex and edge properties
+    dynamic_properties dp;
+    dp.property("vertex_index", get(vertex_index, g));  // Read vertex indices
+
+    // Create the vertices
+    for (int i = 0; i < V; i++) {
+        add_vertex(g);
+    }
+
+    // Create the edges
+    for (int i = 0; i < arcs.rows(); i++) {
+        int source = arcs(i, 0);
+        int target = arcs(i, 1);
+        add_edge(source, target, g);
+    }    
+
+    // Assign all edge weights as 1.0
+    auto edge_pair = edges(g);
+    for (auto it = edge_pair.first; it != edge_pair.second; ++it) {
+        put(boost::edge_weight, g, *it, 1.0f);
+    }
+
+    if (print){
+        std::cout << "Graph contents:" << std::endl;
+        // Get the range of vertices
+        auto vertexRange = boost::vertices(g);
+
+        // Iterate over all vertices and print them
+        std::cout << "Vertices:" << std::endl;
+        for (auto it = vertexRange.first; it != vertexRange.second; ++it) {
+            std::cout << *it << std::endl;
+        }
+
+        // Get the range of edges
+        auto edgeRange = boost::edges(g);
+
+        // Print out all edges in the format (int, int)
+        std::cout << "Edges:" << std::endl;
+        for (auto it = edgeRange.first; it != edgeRange.second; ++it) {
+            auto source = boost::source(*it, g);
+            auto target = boost::target(*it, g);
+            std::cout << "(" << source << ", " << target << ")" << std::endl;
+        }
+
+        // Iterate through the edges and print their source, destination, and weight
+        for (auto it = edge_pair.first; it != edge_pair.second; ++it) {
+            auto src = source(*it, g);
+            auto dest = target(*it, g);
+            auto weight = get(boost::edge_weight, g, *it);
+            std::cout << "Edge from vertex " << src << " to vertex " << dest
+                    << " with weight " << weight << std::endl;
+    }
+
+    }
+    return g;
+}
+
 
 
 void read_matrix(std::string filename, bool print, float** result_matrix, size_t dim){

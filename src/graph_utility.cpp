@@ -1,5 +1,4 @@
-#include "definitions.hpp"
-#include "Nexullance_IT.hpp"
+#include "graph_utility.hpp"
 #include <boost/graph/dijkstra_shortest_paths_no_color_map.hpp>
 #include <boost/property_map/property_map.hpp>
 
@@ -101,32 +100,3 @@ void compute_all_shortest_paths_single_s_d(const Graph &G, Vertex s, Vertex d, s
     assert(false);
 }
 
-std::tuple<double, float> run_Nexullance_IT(std::string input_graph_path, std::string input_matrix_path, int num_step_1){
-    bool debug = false;
-
-    const float Cap_link = 10;
-    Graph G = read_graphml(input_graph_path, debug);
-    int num_routers=boost::num_vertices(G);
-    // reading matrix from file
-    float** matrix = new float*[num_routers];
-    for (int i = 0; i < num_routers; i++) {
-        matrix[i] = new float[num_routers];
-    }
-    read_matrix(input_matrix_path, debug, matrix, num_routers);
-
-
-    NexullanceIT nexu_it = NexullanceIT(G, const_cast<const float**>(matrix), Cap_link, debug);
-    
-    auto start = std::chrono::high_resolution_clock::now();
-    nexu_it.optimize(num_step_1, 1.0, 1.0, 6, 0.1, 7.0, num_routers);
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = end - start;
-    
-    // Deallocate the memory for matrix
-    for (int i = 0; i < num_routers; i++) {
-        delete[] matrix[i];
-    }
-    delete[] matrix;
-
-    return std::make_tuple(elapsed.count(), nexu_it.result_max_loads_step_2.back());
-}

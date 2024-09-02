@@ -77,8 +77,11 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "valarray": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "core": "cpp",
+        "dense": "cpp"
     },
+    "cmake.sourceDirectory": "/users/ziyzhang/topology-research/nexullance/IT_boost/src",
 
     // "C_Cpp.files.exclude": {
     //     "boost/**": true,

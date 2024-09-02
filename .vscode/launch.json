@@ -2,15 +2,15 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch",
+            "name": "(gdb) Launch python",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/main.exe",
-            "args": ["/users/ziyzhang/topology-research/nexullance/handover_data/RRG_25_6/graph.graphml", 
-                    "/users/ziyzhang/topology-research/nexullance/handover_data/RRG_25_6/uniform.txt",
-                    "debug"],
+            "program": "/users/ziyzhang/miniconda3/envs/gt/bin/python3.12",
+            "args": [
+                "/users/ziyzhang/topology-research/nexullance/IT_boost/debug_MD_IT_new/update_MD_IT.py"
+            ],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            "cwd": "${workspaceFolder}/debug_MD_IT_new",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
@@ -26,8 +26,6 @@
                     "ignoreFailures": true
                 }
             ]
-        }
+        },
     ]
-
-
 }
