@@ -29,7 +29,7 @@ typedef boost::graph_traits<Graph>::out_edge_iterator OutEdgeIterator;
 
 typedef std::map<std::pair<Vertex,Vertex>, std::vector< std::pair<std::vector<Vertex>,float> > > result_routing_table;
 
-void test_shortest_paths(std::string input_graph_path);
+// void test_shortest_paths(std::string input_graph_path); // implementaion in the bin
 
 
 #endif // GRAPH_DEFINITIONS_HPP

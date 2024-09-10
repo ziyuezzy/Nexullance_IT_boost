@@ -15,8 +15,8 @@ import time
 import tracemalloc
 import pandas as pd
 
-Cap_remote = 10 #GBps
-Cap_local = 10 #GBps
+Cap_core = 10 #GBps
+Cap_access = 10 #GBps
 
 def main():
     config = gl.ddf_configs[0]
@@ -36,7 +36,7 @@ def main():
     Nexullance_IT_Phis = []
     Nexullance_IT_time = []
     Nexullance_IT_peak_RAM = []
-    max_local_link_loads = []
+    max_access_link_loads = []
 
     # # # Define multiple traffic demand matrices:
     # # shifts
@@ -44,17 +44,17 @@ def main():
     # for _shift in range(1, 5):
         M_EP = gl.generate_shift_traffic_pattern(V, EPR, _shift)
         # try to scale the traffic scaling factor to 10x saturation under ECMP_ASP
-        remote_link_flows, local_link_flows = _network.distribute_M_EPs_on_weighted_paths(ECMP_ASP, EPR, M_EP)
-        max_remote_link_load = np.max(remote_link_flows)/Cap_remote
-        max_local_link_load = np.max(local_link_flows)/Cap_local
-        traffic_scaling = 10.0/max(max_local_link_load, max_remote_link_load)
+        core_link_flows, access_link_flows = _network.distribute_M_EPs_on_weighted_paths(ECMP_ASP, EPR, M_EP)
+        max_core_link_load = np.max(core_link_flows)/Cap_core
+        max_access_link_load = np.max(access_link_flows)/Cap_access
+        traffic_scaling = 10.0/max(max_access_link_load, max_core_link_load)
         M_EP = traffic_scaling * M_EP
         M_R = gl.convert_M_EPs_to_M_R(M_EP, V, EPR)
         # ==============
         # manage data
         M_EPs.append(M_EP)
         M_Rs.append(M_R)
-        max_local_link_loads.append(max_local_link_load)
+        max_access_link_loads.append(max_access_link_load)
         M_R_names.append(f"shift_{_shift}")
     M_R_weights = [1/len(M_Rs) for _ in range(len(M_Rs))]
 
@@ -77,11 +77,11 @@ def main():
     print("resulting weighted max load from MD_Nexullance_IT = ", md_nexu_it.get_weighted_max_link_load())
     print("MD_Nexullance_IT computing time = ", MD_time, " s")
     print("MD_Nexullance_IT peak RAM = ", MD_peak_RAM, " MB")
-    Lremote_for_MRs = md_nexu_it.get_max_link_loads()
+    Lcore_for_MRs = md_nexu_it.get_max_link_loads()
     print("average path length: ",md_nexu_it.get_average_path_length())
     MD_IT_Phis = []
     for i, M_EP in enumerate(M_EPs):
-        MD_IT_Phis.append(gl.network_total_throughput(M_EP, Lremote_for_MRs[i], max_local_link_loads[i]))
+        MD_IT_Phis.append(gl.network_total_throughput(M_EP, Lcore_for_MRs[i], max_access_link_loads[i]))
 
     # pickle output routing tables
     routing_name = f"MD_NEXU_IT_all_shifts"

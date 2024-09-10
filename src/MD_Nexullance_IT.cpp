@@ -12,8 +12,8 @@
 // #include <pybind11/stl.h>
 
 MD_Nexullance_IT::MD_Nexullance_IT(Graph& _input_graph, const std::vector<float**>  _M_Rs, std::vector<float> _M_R_weights, 
-    const float _Cap_remote, const bool _verbose): G(_input_graph), M_Rs(_M_Rs), M_R_weights(_M_R_weights),
-    Cap_remote(_Cap_remote), verbose(_verbose), final_max_load(NULL) {
+    const float _Cap_core, const bool _verbose): G(_input_graph), M_Rs(_M_Rs), M_R_weights(_M_R_weights),
+    Cap_core(_Cap_core), verbose(_verbose), final_max_load(NULL) {
 
     num_edges = boost::num_edges(G);
     num_vertices = boost::num_vertices(G);
@@ -125,7 +125,7 @@ void MD_Nexullance_IT::step_1(float _alpha, float _beta) {
                     Edge e = boost::edge(u, v, G).first; // the boost::edge(u, v, G) returns a pair<Edge edge(u,v), bool found>
                     link_path_ids[e.m_source][e.m_target].push_back(path_id);
                     for (int m = 0; m < M; m++) {
-                        link_load_vec[m][e.m_source][e.m_target] += ECMP_weight*M_Rs[m][s][d]/Cap_remote; // TODO: to further optimize, divide Cap_remote on the M_R at the beginning?
+                        link_load_vec[m][e.m_source][e.m_target] += ECMP_weight*M_Rs[m][s][d]/Cap_core; // TODO: to further optimize, divide Cap_core on the M_R at the beginning?
                     }
                     // boost::put(boost::edge_weight, G, e, _alpha + pow(link_load[e.m_source][e.m_target],_beta)); // TODO: alternatively, update the weights outside this loop, may lead to speedup
                 }
@@ -240,7 +240,7 @@ bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float thres
                     std::vector<Vertex> old_path = path_id_to_path[old_path_id];
                     int src = old_path.front();
                     int dst = old_path.back();
-                    float contribution = routing_tables[src][dst][old_path_id]*M_Rs[n][src][dst]/Cap_remote;
+                    float contribution = routing_tables[src][dst][old_path_id]*M_Rs[n][src][dst]/Cap_core;
                     sorted_path_ids.insert(std::make_pair(contribution, old_path_id));
                 }
 
@@ -309,7 +309,7 @@ bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float thres
                                 new_path_margins.clear();
                                 for (int m = 0; m < M; m++) {
                                     if (M_Rs[m][src][dst]>0){
-                                        new_path_margins.push_back(Cap_remote*(max_load_vec[m]-new_path_max_loads[m])/M_Rs[m][src][dst]);
+                                        new_path_margins.push_back(Cap_core*(max_load_vec[m]-new_path_max_loads[m])/M_Rs[m][src][dst]);
                                     }
                                 }
                                 if (new_path_margins.size() > 0)
@@ -348,7 +348,7 @@ bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float thres
                                         delta_weigth = std::min(std::min(step, std::min(old_path_weight, 1 - it->second)), least_margin); 
                                     }else{
                                         delta_weigth = std::min(std::min(step, std::min(old_path_weight, 1 - it->second)), 
-                                                        Cap_remote*(max_load_vec[n]-new_path_max_loads[n])/M_Rs[n][src][dst]); 
+                                                        Cap_core*(max_load_vec[n]-new_path_max_loads[n])/M_Rs[n][src][dst]); 
                                     }
                                     // it->second += delta_weigth; // TODO: check and change this for Nexullance_IT
                                     break;
@@ -375,7 +375,7 @@ bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float thres
                                     delta_weigth = std::min(std::min(step, old_path_weight), least_margin); 
                                 }else{
                                     delta_weigth = std::min(std::min(step, old_path_weight), 
-                                                    Cap_remote*(max_load_vec[n]-new_path_max_loads[n])/M_Rs[n][src][dst]); 
+                                                    Cap_core*(max_load_vec[n]-new_path_max_loads[n])/M_Rs[n][src][dst]); 
                                 }
                                 current_routing_table.insert(std::make_pair(new_path_id, delta_weigth));                
                                 // current_routing_table[new_path_id] = delta_weigth;
@@ -396,7 +396,7 @@ bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float thres
                                 if(!new_path_found)
                                     link_path_ids[e.m_source][e.m_target].push_back(new_path_id);
                                 for (int m = 0; m < M; m++) { // for each demand matrix
-                                    link_load_vec[m][e.m_source][e.m_target] += delta_weigth*M_Rs[m][src][dst]/Cap_remote; // TODO: to further optimize, divide Cap_remote on the M_R at the beginning?
+                                    link_load_vec[m][e.m_source][e.m_target] += delta_weigth*M_Rs[m][src][dst]/Cap_core; // TODO: to further optimize, divide Cap_core on the M_R at the beginning?
                                 }
                             }
 
@@ -410,7 +410,7 @@ bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float thres
                                 Vertex v = old_path[l+1];
                                 Edge e = boost::edge(u, v, G).first; // the boost::edge(u, v, G) returns a pair<Edge edge(u,v), bool found>
                                 for (int m = 0; m < M; m++) { // for each demand matrix
-                                    link_load_vec[m][e.m_source][e.m_target] -= delta_weigth*M_Rs[m][src][dst]/Cap_remote; // TODO: to further optimize, divide Cap_remote on the M_R at the beginning?
+                                    link_load_vec[m][e.m_source][e.m_target] -= delta_weigth*M_Rs[m][src][dst]/Cap_core; // TODO: to further optimize, divide Cap_core on the M_R at the beginning?
                                     // handle rounding errors:
                                     if (link_load_vec[m][e.m_source][e.m_target] < 0) {
                                         assert(link_load_vec[m][e.m_source][e.m_target]>-0.000001);

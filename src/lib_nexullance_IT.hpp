@@ -2,58 +2,89 @@
 #define LIB_NEXULLANCE_IT_HPP
 
 #include "definitions.hpp"
-#include "read_data.hpp"
+#include "graph_utility.hpp"
 #include "Nexullance_IT.hpp"
 #include "MD_Nexullance_IT.hpp"
 #include <Eigen/Dense>
 
+// Define a struct that contains all outputs from a run of Nexullance_IT, including the profiled time (RAM measurement will be in python calls), 
+// the resulting max link load, the resulting phi and the routing table
+struct IT_outputs{
+    IT_outputs(double _elapsed_time, float _max_link_load, float _phi, result_routing_table _routing_table) : 
+            elapsed_time(_elapsed_time), max_link_load(_max_link_load), phi(_phi), routing_table(_routing_table) { }
+    double get_elapsed_time() const {return elapsed_time;}
+    float get_max_link_load() const {return max_link_load;}
+    float get_phi() const {return phi;}
+    result_routing_table get_routing_table() const {return routing_table;}
+
+    double elapsed_time;
+    float max_link_load;
+    float phi;
+    result_routing_table routing_table;
+};
+
+// Similarly, define a struct for MD_Nexullance_IT. This includes the profiled time, 
+// the resulting list of max link load, the list of phi and the routing table.
+struct MD_IT_outputs{
+    MD_IT_outputs(double _elapsed_time, std::vector<float> _max_link_loads, std::vector<float> _phis, result_routing_table _routing_table) : 
+            elapsed_time(_elapsed_time), max_link_loads(_max_link_loads), phis(_phis), routing_table(_routing_table) { }
+    double get_elapsed_time() const {return elapsed_time;}
+    std::vector<float> get_max_link_loads() const {return max_link_loads;}
+    std::vector<float> get_phis() const {return phis;}
+    result_routing_table get_routing_table() const {return routing_table;}
+
+    double elapsed_time;
+    std::vector<float> max_link_loads;
+    std::vector<float> phis;
+    result_routing_table routing_table;
+};
 
 // TODO: a path can be simlified as "Vertex*"
 
-std::tuple<double, float> run_Nexullance_IT_with_paths(std::string input_graph_path, std::string input_matrix_path, int num_step_1);
-
-std::tuple<double, float> run_Nexullance_IT(int V, Eigen::MatrixX2i arcs, Eigen::MatrixXf input_matrix, int num_step_1);
-
 class Nexullance_IT_interface {
     public:
-    Nexullance_IT_interface(int V, Eigen::MatrixX2i arcs, Eigen::MatrixXf input_matrix, bool debug);
+    Nexullance_IT_interface(int V, Eigen::MatrixX2i arcs, const float Cap_core = 10 /*Gbps*/,
+                                const float Cap_access = 10 /*Gbps*/, bool debug = false);
     ~Nexullance_IT_interface();
-    double run();
-    float get_max_link_load();
-    result_routing_table get_routing_table();
-    float get_average_path_length();
 
-    size_t get_num_attempts_step_2();
-    void set_parameters(float _alpha, float _beta);
+    Graph G;
+    bool _debug = false;
 
-    private:
-    Nexullance_IT *nexu_it = nullptr;
-    int _V;
-    float alpha=0.1;
-    float beta=7.0;
+    IT_outputs run_IT(Eigen::MatrixXf M_EPs, const int EPR);
+    MD_IT_outputs run_MD_IT(std::vector<Eigen::MatrixXf> M_EPs_s, std::vector<float> weights, const int EPR);
 
-};
+    inline void set_parameters(float alpha, float beta, float stepping_threshold, 
+                       int num_steppings, int max_attempts, int min_attempts){
+        _alpha = alpha;
+        _beta = beta;
+        // _init_step = init_step;
+        _stepping_threshold = stepping_threshold;
+        _num_steppings = num_steppings;
+        _max_attempts = max_attempts;
+        _min_attempts = min_attempts;
+        // _cal_least_margin = cal_least_margin;
+        }
 
-class MD_Nexullance_IT_interface {
-    public:
-    MD_Nexullance_IT_interface(int V, Eigen::MatrixX2i arcs, std::vector<Eigen::MatrixXf> MRs,
-                               std::vector<float> MR_weights, bool debug);
-    ~MD_Nexullance_IT_interface();
-    double run(int num_step_2, float method_2_threshold, int method_2_max_attempts, bool cal_least_margin);
-    float get_weighted_max_link_load();
-    float get_average_path_length();
-
-    std::vector<float> get_max_link_loads();
-    result_routing_table get_routing_table();
-    size_t get_num_attempts_step_2();
-    void set_parameters(float _alpha, float _beta);
 
     private:
-    MD_Nexullance_IT *md_nexu_it = nullptr;
     int _V;
-    size_t _M;
-    float alpha=0.1;
-    float beta=7.0;
+    const float _Cap_core;
+    const float _Cap_access;
+
+    // For now, assume 'step 1' is only done once, with alpha=beta=1.0
+    // So the only 'step 2' parameters are needed
+    float _alpha=0.1f;
+    float _beta=7.0f;
+    // float _init_step = 0.5f;
+    float _stepping_threshold = 0.0001f;
+    int _num_steppings = 5; // number of times to adjust step size
+    int _max_attempts = 1000000;
+    int _min_attempts = 100;
+    // bool _cal_least_margin = false;
+
+    // These above parameters are configured in method "set_parameters"
+    
 };
+
 
 #endif

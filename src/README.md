@@ -1,7 +1,23 @@
 # Nexullance_IT_boost
 
-1. get boost, download and unzip, and build
+#### definitions.hpp: 
+Defines boost graph data structures
 
-<!-- TODO: use pybind11 to call nexullance_IT from python -->
-1. first test the main fuction in python (or write a facade object)
-2. try to pass nparray (this need the Eigen lib) and graph data (list of arcs) from python to c++, 
+#### graph_utility.hpp, graph_utility.cpp: 
+Utility functions for graph algorithms, includes graph-construction (from a list of arcs) and path-finding algorithms.
+Sep2024: Added a function to calculate the network data throughput (given demand matrix and max core link load)
+
+#### Nexullance_IT.hpp, Nexullance_IT.cpp: 
+Implementation of the Nexullance_IT algorithm
+
+#### MD_Nexullance_IT.hpp , MD_Nexullance_IT.cpp: 
+Implementation of the MD_Nexullance_IT algorithm
+  
+#### lib_nexullance_IT.hpp, lib_nexullance_IT.cpp: 
+pybind11 interface, wraps around Nexullance_IT and MD_Nexullance_IT classes
+ 
+
+
+
+
+

@@ -9,9 +9,9 @@
 using path_id = size_t;
 
 class MD_Nexullance_IT{
-    // _nx_graph: nxGraph, _M_R: np.ndarray, _Cap_remote: float, _verbose:bool=False
+    // _nx_graph: nxGraph, _M_R: np.ndarray, _Cap_core: float, _verbose:bool=False
     public:
-        MD_Nexullance_IT(Graph& _input_graph, const std::vector<float**> _M_Rs, const std::vector<float> _M_R_weights, const float _Cap_remote, const bool _verbose=false);
+        MD_Nexullance_IT(Graph& _input_graph, const std::vector<float**> _M_Rs, const std::vector<float> _M_R_weights, const float _Cap_core, const bool _verbose=false);
         ~MD_Nexullance_IT();
 
         void get_finial_max_load();
@@ -37,7 +37,7 @@ class MD_Nexullance_IT{
         const std::vector<float**> M_Rs;
         const std::vector<float> M_R_weights;
         std::vector<float> max_load_vec; // max load under each demand matrix
-        const float Cap_remote;
+        const float Cap_core;
         const bool verbose;
         path_id next_path_id;
         std::unordered_map<path_id, std::vector<Vertex>> path_id_to_path; // using vector here, because the shortest-path algorithm return vector<Vertex> as a path

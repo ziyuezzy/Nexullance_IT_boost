@@ -7,10 +7,10 @@
             "request": "launch",
             "program": "/users/ziyzhang/miniconda3/envs/gt/bin/python3.12",
             "args": [
-                "/users/ziyzhang/topology-research/nexullance/IT_boost/debug_MD_IT_new/update_MD_IT.py"
+                "/users/ziyzhang/topology-research/nexullance/IT_boost/debug_IT.py"
             ],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/debug_MD_IT_new",
+            "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
