@@ -26,17 +26,19 @@ struct IT_outputs{
 // Similarly, define a struct for MD_Nexullance_IT. This includes the profiled time, 
 // the resulting list of max link load, the list of phi and the routing table.
 struct MD_IT_outputs{
-    MD_IT_outputs(double _elapsed_time, std::vector<float> _max_link_loads, std::vector<float> _phis, result_routing_table _routing_table) : 
-            elapsed_time(_elapsed_time), max_link_loads(_max_link_loads), phis(_phis), routing_table(_routing_table) { }
+    MD_IT_outputs(double _elapsed_time, std::vector<float> _max_link_loads, std::vector<float> _phis, result_routing_table _routing_table, float _Objective_func) : 
+            elapsed_time(_elapsed_time), max_link_loads(_max_link_loads), phis(_phis), routing_table(_routing_table), Objective_func(_Objective_func) { }
     double get_elapsed_time() const {return elapsed_time;}
     std::vector<float> get_max_link_loads() const {return max_link_loads;}
     std::vector<float> get_phis() const {return phis;}
     result_routing_table get_routing_table() const {return routing_table;}
+    float get_obj() const {return Objective_func;}
 
     double elapsed_time;
     std::vector<float> max_link_loads;
     std::vector<float> phis;
     result_routing_table routing_table;
+    float Objective_func;
 };
 
 // TODO: a path can be simlified as "Vertex*"
@@ -54,7 +56,7 @@ class Nexullance_IT_interface {
     MD_IT_outputs run_MD_IT(std::vector<Eigen::MatrixXf> M_EPs_s, std::vector<float> weights, const int EPR);
 
     inline void set_parameters(float alpha, float beta, float stepping_threshold, 
-                       int num_steppings, int max_attempts, int min_attempts){
+                       int num_steppings, int max_attempts, int min_attempts, bool cal_least_margin=false){
         _alpha = alpha;
         _beta = beta;
         // _init_step = init_step;
@@ -62,7 +64,7 @@ class Nexullance_IT_interface {
         _num_steppings = num_steppings;
         _max_attempts = max_attempts;
         _min_attempts = min_attempts;
-        // _cal_least_margin = cal_least_margin;
+        _cal_least_margin = cal_least_margin;
         }
 
 
@@ -80,7 +82,7 @@ class Nexullance_IT_interface {
     int _num_steppings = 5; // number of times to adjust step size
     int _max_attempts = 1000000;
     int _min_attempts = 100;
-    // bool _cal_least_margin = false;
+    bool _cal_least_margin = false;
 
     // These above parameters are configured in method "set_parameters"
     

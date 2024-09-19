@@ -33,14 +33,14 @@ Nexullance_IT::Nexullance_IT(Graph& _input_graph, const float** _M_EPs,
 
     link_load = new float*[num_vertices];
     for (int i = 0; i < num_vertices; i++) {
-        link_load[i] = new float[num_vertices];
+        link_load[i] = new float[num_vertices]{0.0f};
     }
-    // assign 0.0 to all link_load initially
-    for (int i = 0; i < num_vertices; i++) { // order of loops??
-        for (int j = 0; j < num_vertices; j++) {
-            link_load[i][j] = 0.0;
-        }
-    }
+    // // assign 0.0 to all link_load initially
+    // for (int i = 0; i < num_vertices; i++) { // order of loops??
+    //     for (int j = 0; j < num_vertices; j++) {
+    //         link_load[i][j] = 0.0;
+    //     }
+    // }
 
     link_path_ids = new std::vector<path_id>*[num_vertices];
     for (int i = 0; i < num_vertices; i++) {

@@ -37,7 +37,7 @@ class Nexullance_IT{
         const int EPR;
         size_t num_edges;
         size_t num_vertices;
-        const float** M_R;
+        float** M_R;
         const float Cap_core;
         const float Cap_access;
         const bool verbose;

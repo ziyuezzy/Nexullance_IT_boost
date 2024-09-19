@@ -52,41 +52,43 @@ IT_outputs Nexullance_IT_interface::run_IT(Eigen::MatrixXf M_EP, const int EPR){
     return result;
 }
 
-// MD_IT_outputs Nexullance_IT_interface::run_MD_IT(std::vector<Eigen::MatrixXf> M_EPs_s, std::vector<float> weights, const int EPR){
-//     int _M = M_EPs_s.size();
-//     assert(_M == weights.size());
-//     int num_EPs = _V*EPR;
+MD_IT_outputs Nexullance_IT_interface::run_MD_IT(std::vector<Eigen::MatrixXf> M_EPs_s, std::vector<float> weights, const int EPR){
+    int _M = M_EPs_s.size();
+    assert(_M == weights.size());
+    int num_EPs = _V*EPR;
 
-//     // converting the Eigen matrix to a float** matrix
-//     std::vector<float**> M_EP_matrices;
-//     for (int m = 0; m < _M; m++) {
-//         M_EP_matrices.push_back(new float*[num_EPs]);
-//         for (int j = 0; j < num_EPs; j++) {
-//             M_EP_matrices[m][j] = new float[num_EPs];
-//         }
-//     }
+    // converting the Eigen matrix to a float** matrix
+    std::vector<float**> M_EP_matrices;
+    for (int m = 0; m < _M; m++) {
+        M_EP_matrices.push_back(new float*[num_EPs]);
+        for (int j = 0; j < num_EPs; j++) {
+            M_EP_matrices[m][j] = new float[num_EPs];
+        }
+    }
 
-//     for (int m = 0; m < _M; m++) {
-//         assert(M_EPs_s[m].rows() == num_EPs && M_EPs_s[m].cols() == num_EPs);
-//         for (int i = 0; i < num_EPs; ++i) {
-//             for (int j = 0; j < num_EPs; ++j) {
-//                 M_EP_matrices[m][i][j] = M_EPs_s[m](i, j);
-//             }
-//         }
-//     }
-//     //===========
-//     MD_Nexullance_IT md_nexu_it = MD_Nexullance_IT(G, M_EP_matrices, weights, _Cap_core, _debug);
+    for (int m = 0; m < _M; m++) {
+        assert(M_EPs_s[m].rows() == num_EPs && M_EPs_s[m].cols() == num_EPs);
+        for (int i = 0; i < num_EPs; ++i) {
+            for (int j = 0; j < num_EPs; ++j) {
+                M_EP_matrices[m][i][j] = M_EPs_s[m](i, j);
+            }
+        }
+    }
+    //===========
+    MD_Nexullance_IT md_nexu_it = MD_Nexullance_IT(G, M_EP_matrices, weights, EPR, 
+                                    _Cap_core, _Cap_access, _debug);
 
-//     auto start = std::chrono::high_resolution_clock::now();
-//     md_nexu_it.optimize(1, 1.0, 1.0, _num_steppings+1, _alpha, _beta, _min_attempts, 
-//                         _stepping_threshold, _max_attempts, _cal_least_margin);
-//     auto end = std::chrono::high_resolution_clock::now();
-//     std::chrono::duration<double> elapsed = end - start;
+    auto start = std::chrono::high_resolution_clock::now();
+    md_nexu_it.optimize(1, 1.0, 1.0, _num_steppings+1, _alpha, _beta, _min_attempts, 
+                        _stepping_threshold, _max_attempts, _cal_least_margin);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
 
-//     MD_IT_outputs result = MD_IT_outputs(elapsed.count(), md_nexu_it.get_max_load_vec(), md_nexu_it.get_phi_vec(), md_nexu_it.get_routing_table()); //TODO: implemnet
+    MD_IT_outputs result = MD_IT_outputs(elapsed.count(), md_nexu_it.get_max_core_load_vec(), md_nexu_it.get_phis(), md_nexu_it.get_routing_table(), md_nexu_it.get_obj());
 
-//     return result;
-// }
+    return result;
+}
+
 
 namespace py = pybind11;
 constexpr auto byref = py::return_value_policy::reference_internal;
@@ -100,7 +102,7 @@ PYBIND11_MODULE(Nexullance_IT_cpp, m) {
    .def(py::init<int, Eigen::MatrixX2i, const float, const float, bool>(), py::arg("V"), py::arg("arcs"), py::arg("Cap_core") = 10, py::arg("Cap_access") = 10, py::arg("debug") = false)
    .def("set_parameters", &Nexullance_IT_interface::set_parameters)
    .def("run_IT", &Nexullance_IT_interface::run_IT)
-//    .def("run_MD_IT", &Nexullance_IT_interface::run_MD_IT)
+   .def("run_MD_IT", &Nexullance_IT_interface::run_MD_IT)
    ;
 
     py::class_<IT_outputs>(m, "IT_outputs")
@@ -112,7 +114,9 @@ PYBIND11_MODULE(Nexullance_IT_cpp, m) {
     py::class_<MD_IT_outputs>(m, "MD_IT_outputs")
         .def("get_elapsed_time", &MD_IT_outputs::get_elapsed_time)
         .def("get_max_link_load", &MD_IT_outputs::get_max_link_loads)
-        .def("get_phi", &MD_IT_outputs::get_phis)
-        .def("get_routing_table", &MD_IT_outputs::get_routing_table);
+        .def("get_phis", &MD_IT_outputs::get_phis)
+        .def("get_routing_table", &MD_IT_outputs::get_routing_table)
+        .def("get_obj", &MD_IT_outputs::get_obj);
+        // .def("get_weighted_sum_phi", &MD_IT_outputs::get_weighted_sum_phi)
 
 }

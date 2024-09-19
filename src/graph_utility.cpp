@@ -112,7 +112,7 @@ Graph read_graph_from_arcs(int V, Eigen::MatrixX2i arcs, bool print) {
 
 // }
 
-std::pair<float, float> procress_M_EPs(const float** _M_EPs, const int num_vertices, const int _EPR, const float** * out_M_R){
+std::pair<float, float> procress_M_EPs(const float** _M_EPs, const int num_vertices, const int _EPR, float*** out_M_R){
 
 
     int num_EPs = num_vertices*_EPR;
@@ -158,7 +158,7 @@ std::pair<float, float> procress_M_EPs(const float** _M_EPs, const int num_verti
                 }
             }
         }
-        *out_M_R = const_cast<const float**>(temp_M_R);
+        *out_M_R = temp_M_R;
     }
 
     return std::make_pair(maxEPflow, total_flow);
