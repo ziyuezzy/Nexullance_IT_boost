@@ -5,6 +5,7 @@
 #include <boost/unordered/unordered_map.hpp>
 // #include <list>
 #include <unordered_map>
+#include <map>
 
 using path_id = size_t;
 
@@ -49,6 +50,7 @@ class MD_Nexullance_IT{
         
         std::vector<float**> M_Rs;
         const std::vector<float> M_weights;
+        std::vector<float> cumulative_weights;
         const float Cap_core;
         const float Cap_access;
         const bool verbose;
@@ -70,12 +72,9 @@ class MD_Nexullance_IT{
         std::vector<path_id>** link_path_ids;
         // float final_max_load;
         
-        // boost::unordered_map<Edge, float> link_load; // TODO?: probably not necessary to use a map. So in case of bottleneck of std::map operation, we can consider to optimize this?(2D s-d array with sparse values)
-        // boost::unordered_map<Edge, std::vector<path_id>> link_path_ids; // using vector here, because we may need to dynamically remove or append elements.   
-
         std::vector<std::vector<Vertex>>** all_paths_all_s_d;
         property_map< Graph, edge_weight_t >::type weightmap;
-
+        // std::multimap<float, uint, std::greater<float>> Obj_map_S; // a descending multimap, keys are w_m/phi_m, values are m
 
 };
 #endif // GRAPH_DEFINITIONS_HPP

@@ -20,6 +20,15 @@ MD_Nexullance_IT::MD_Nexullance_IT(Graph& _input_graph, std::vector<float**> _M_
 
     M = _M_EPs_s.size();
     assert(M == M_weights.size());
+
+    // Ensure the weights sum to 1
+    float sum = std::accumulate(M_weights.begin(), M_weights.end(), 0.0f);
+    assert(std::abs(sum - 1.0f) < 1e-6 && "Error: Weights do not sum to 1!");
+    // Create a vector of cumulative sums
+    cumulative_weights.resize(M_weights.size());
+    std::partial_sum(M_weights.begin(), M_weights.end(), cumulative_weights.begin());
+
+
     M_Rs.resize(M);
     total_flows_per_EP.resize(M);
     max_access_loads.resize(M);
@@ -34,6 +43,7 @@ MD_Nexullance_IT::MD_Nexullance_IT(Graph& _input_graph, std::vector<float**> _M_
     
     max_core_loads.resize(M, 0.0f);
     phis.resize(M, 0.0f);
+    // Obj_map_S.clear();
     // weighted_sum_phi = 0.0f;
     Objective_func_inverse = 0.0f;
 
@@ -155,9 +165,6 @@ void MD_Nexullance_IT::step_1(float _alpha, float _beta) {
         // weighted_sum_phi += phis[m]*M_weights[m];
         Objective_func_inverse += M_weights[m]/phis[m];
     }
-    // if(verbose)
-    //     std::cout<<"step 1: found max link load"<<std::endl;
-    // result_max_loads_step_1.push_back(weighted_sum_phi);
 
     if(verbose)
         std::cout<<"result objective function from step1: " << 1/Objective_func_inverse << std::endl;
@@ -179,12 +186,9 @@ bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float thres
     long last_increased_path_id = -1;
 
     while (attempts < max_attempts) {
-
-        // find the max link load of each m, and then calculate the weighted average
         Objective_func_inverse = 0.0;
 
-        // int n = -1;
-        // float Gamma_n = 0.0; // to find the maximum of the products of max_core_loads[m] and M_R_weights[m]
+        // find the max link load of each m, and then calculate the weighted average
         for (int m = 0; m < M; m++) {
             max_core_load_links[m].clear();
             max_core_loads[m] = 0.0;
@@ -202,33 +206,91 @@ bool MD_Nexullance_IT::step_2(float _alpha, float _beta, float step, float thres
             // float Gamma_m = max_core_loads[m]*M_R_weights[m]; // the products of max_core_loads[m] and M_R_weights[m]
             // weighted_sum_phi += Gamma_m;  
             phis[m] = total_flows_per_EP[m]/std::max(max_access_loads[m], max_core_loads[m]);
-            // weighted_sum_phi += M_weights[m]*phis[m];
-            Objective_func_inverse += M_weights[m]/phis[m];
-
-            // if (Gamma_m > Gamma_n) { //TODO: if multiple m leads to the same Gamma?
-            //     n = m;
-            //     Gamma_n = Gamma_m;
-            // }
+            float weighted_contribution = M_weights[m]/phis[m];
+            // Obj_map_S.insert(std::make_pair(weighted_contribution, m));
+            Objective_func_inverse += weighted_contribution;
         }
         Objective_func_inverse_hist.push_back(Objective_func_inverse);
         // assert(n != -1);
 
         // now determine n (which demand matrix to work on)
-        int n = attempts%M; // round robin starting point
-        int counter = 0;
-        while (counter < M) // loop through all demand matrices at most once
-        {
-            if(max_access_loads[n] < max_core_loads[n]){ 
-                break; // if the core link load is larger, we choose this demand matrix and therefore break the loop
+
+        // // =================simple round robin=============
+        // int n = attempts%M; // round robin starting point
+        // int counter = 0;
+        // while (counter < M) // loop through all demand matrices at most once
+        // {
+        //     if(max_access_loads[n] < max_core_loads[n]){ 
+        //         break; // if the core link load is larger, we choose this demand matrix and therefore break the loop
+        //     }
+        //     // if the access link load becomes larger, skip this demand matrix, try the next one
+        //     if(verbose){
+        //         std::cout<<"access load becomes bottleneck, skipping demand matrix "<< n << std::endl;
+        //     }  
+        //     n = (n+1)%M;
+        //     counter+=1;
+        // }
+        // // if all m satisfies "max_access_loads[m] >= max_core_loads[m]", terminate.
+        // if (counter == M){
+        //     if(verbose){
+        //         std::cout<<"access load becomes bottleneck in all demand matrices, terminating with objective function = " << 1/Objective_func_inverse << std::endl;
+        //     }  
+        //     return false;
+        // }
+        // // =================================================
+        // // ==============iterate through Obj_map_S==========
+        // uint n;
+        // auto it = Obj_map_S.begin();
+        // while (it != Obj_map_S.end()) // loop through all demand matrices at most once
+        // {
+        //     n = it->second;
+        //     if(max_access_loads[n] < max_core_loads[n]){ 
+        //         break; // if the core link load is larger, we choose this demand matrix and therefore break the loop
+        //     }else{
+        //         // if the access link load becomes larger, skip this demand matrix, try the next one
+        //         if(verbose){
+        //             std::cout<<"access load becomes bottleneck, skipping demand matrix "<< n << std::endl;
+        //         }  
+        //         n = (n+1)%M;
+        //         it++;
+        //     }
+        // }
+        // // if all m satisfies "max_access_loads[m] >= max_core_loads[m]", terminate.
+        // if (it == Obj_map_S.end()){
+        //     if(verbose){
+        //         std::cout<<"access load becomes bottleneck in all demand matrices, terminating with objective function = " << 1/Objective_func_inverse  << std::endl;
+        //     }  
+        //     return false;
+        // }
+        // // =================================================
+        // =================randomization with weights=============
+        // check whether or not all demand matrix satisfy "max_access_loads[n] >= max_core_loads[n]"
+        bool should_exit = true;
+        for (size_t m = 0; m < M; m++){
+            if (max_access_loads[m] < max_core_loads[m]){
+                should_exit = false;
             }
-            // if the access link load becomes larger, skip this demand matrix, try the next one
-            if(verbose){
-                std::cout<<"access load becomes bottleneck, skipping demand matrix "<< n << std::endl;
-            }  
-            n = (n+1)%M;
-            counter+=1;
         }
-        
+        if(should_exit){
+            std::cout<<"access load becomes bottleneck in all demand matrices, terminating with objective function = " << 1/Objective_func_inverse  << std::endl;
+            return false;
+        }
+        // throw dice(s) to determine n.
+        uint n;
+        // Create a distribution that generates numbers between 0 and 1
+        std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+        do
+        {
+            float random_float = dist(rng);
+            // Determine which range the random number falls into
+            for (size_t i = 0; i < cumulative_weights.size(); ++i) {
+                if (random_float < cumulative_weights[i]) {
+                    n=i;
+                    break;
+                }
+            }
+        } while (max_access_loads[n] >= max_core_loads[n]);
+        // =================================================
 
         if(verbose){
             std::cout<<"step2, it="<< attempts << ", Objective function = " << 1/Objective_func_inverse << std::endl;
