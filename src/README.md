@@ -1,5 +1,11 @@
 # Nexullance_IT_boost
 
+## to make
+
+first set correct python path and pybind11 in CMakeLists.txt
+install eigen3, e.g., sudo apt install libeigen3-dev
+install boost, e.g., sudo apt-get install libboost-all-dev
+
 #### definitions.hpp: 
 Defines boost graph data structures
 

@@ -9,19 +9,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # For debugging
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -fexceptions")
 # For release
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ffast-math -Wall -pedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ffast-math -Wall -pedantic -fPIC")
 
-set(Python3_EXECUTABLE /users/ziyzhang/miniconda3/envs/gt/bin/python3)
+set(Python3_EXECUTABLE /users/ziyzhang/miniconda3/envs/nexu/bin/python3.12)
 find_package(Python3 3.12 REQUIRED COMPONENTS Interpreter Development)
 # set(pybind11_DIR /users/ziyzhang/miniconda3/envs/gt/lib/python3.12/site-packages/pybind11)
-set(pybind11_DIR /users/ziyzhang/miniconda3/envs/gt/lib/python3.12/site-packages/pybind11/share/cmake/pybind11)
+set(pybind11_DIR /users/ziyzhang/miniconda3/envs/nexu/lib/python3.12/site-packages/pybind11/share/cmake/pybind11)
 find_package(pybind11 REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-# Include directories
-include_directories(/users/ziyzhang/topology-research/nexullance/IT_boost/src/boost)
-# Link directories and libraries
-link_directories(/users/ziyzhang/topology-research/nexullance/IT_boost/src/boost/stage/lib)
+# # Include directories
+# include_directories(/users/ziyzhang/topology-research/nexullance/IT_boost/src/boost)
+# # Link directories and libraries
+# link_directories(/users/ziyzhang/topology-research/nexullance/IT_boost/src/boost/stage/lib)
 
 # Find all source files in the current directory
 file(GLOB SRCS *.cpp)
