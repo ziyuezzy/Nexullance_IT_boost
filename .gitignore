@@ -1,5 +1,6 @@
 CMakeFiles/
-build/
+build/*
 debug_*/
 test_*.ipynb
 FlameGraph/
+!build/*.so
