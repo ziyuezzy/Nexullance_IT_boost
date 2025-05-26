@@ -5,14 +5,13 @@
 
 #include <queue>
 #include <iostream>
-#include <chrono>
 
 Graph read_graph_from_arcs(int V, Eigen::MatrixX2i arcs, bool print) {
     // the input is a matrix (np array of size (E, 2)) that describes the arcs of the graph
 
+    #ifdef DEBUG
     assert(arcs.rows() > 0 && "the matrix is empty");
-    // assert(arcs.cols() == 2 && "the matrix should have two columns");
-   
+    #endif
 
     // Create a graph object
     Graph g;
@@ -141,25 +140,23 @@ std::pair<float, float> procress_M_EPs(const float** _M_EPs, const int num_verti
     // Clean up the allocated memory
     delete[] colSums;
 
-    if (out_M_R != nullptr) {
-        float** temp_M_R = new float*[num_vertices];
-        for (int i = 0; i < num_vertices; i++) {
-            temp_M_R[i] = new float[num_vertices]{0};
-        }
-        for (int i = 0; i < num_vertices; i++) {
-            for (int j = 0; j < num_vertices; j++) {
-                if (i == j) {
-                    continue;
-                }
-                for (int sep = 0; sep < _EPR; sep++) {
-                    for (int dep = 0; dep < _EPR; dep++) {
-                        temp_M_R[i][j] += _M_EPs[sep + i * _EPR][dep + j * _EPR];
-                    }
+    float** temp_M_R = new float*[num_vertices];    // will be deleted in the caller
+    for (int i = 0; i < num_vertices; i++) {
+        temp_M_R[i] = new float[num_vertices]{0};    // will be deleted in the caller
+    }
+    for (int i = 0; i < num_vertices; i++) {
+        for (int j = 0; j < num_vertices; j++) {
+            if (i == j) {
+                continue;
+            }
+            for (int sep = 0; sep < _EPR; sep++) {
+                for (int dep = 0; dep < _EPR; dep++) {
+                    temp_M_R[i][j] += _M_EPs[sep + i * _EPR][dep + j * _EPR];
                 }
             }
         }
-        *out_M_R = temp_M_R;
     }
+    *out_M_R = temp_M_R;
 
     return std::make_pair(maxEPflow, total_flow);
 }
@@ -215,9 +212,11 @@ void compute_all_shortest_paths_single_s_d(const Graph &G, Vertex s, Vertex d, s
                                 const boost::property_map<Graph, boost::edge_weight_t>::type &weightmap) {
     std::vector<std::vector<Vertex>> all_paths[num_vertices(G)];
     
+    #ifdef DEBUG
     assert(s != d);
     // make sure s and d are valid vertices in the graph
     assert(s < num_vertices(G) && d < num_vertices(G));
+    #endif
 
     float dist[num_vertices(G)];
     dijkstra_shortest_paths_no_color_map(G, s, distance_map(boost::make_iterator_property_map(dist, get(boost::vertex_index, G))).weight_map(weightmap));
@@ -255,6 +254,8 @@ void compute_all_shortest_paths_single_s_d(const Graph &G, Vertex s, Vertex d, s
     // if we reach here, then there is no path from s to d
     // raise an error
     std::cout << "No path found from " << s << " to " << d << std::endl;
+    #ifdef DEBUG
     assert(false);
+    #endif
 }
 

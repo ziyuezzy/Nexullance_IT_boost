@@ -31,5 +31,44 @@ typedef std::map<std::pair<Vertex,Vertex>, std::vector< std::pair<std::vector<Ve
 
 // void test_shortest_paths(std::string input_graph_path); // implementaion in the bin
 
+// Define a struct that contains all outputs from a run of Nexullance_IT, including the profiled time (RAM measurement will be in python calls), 
+// the resulting max link load, the resulting phi and the routing table
+struct IT_outputs{
+    IT_outputs(double _elapsed_time, float _max_link_load, float _phi, result_routing_table _routing_table, size_t _num_attempts) : 
+            elapsed_time(_elapsed_time), max_core_link_load(_max_link_load), phi(_phi), routing_table(_routing_table), num_attempts(_num_attempts) { }
+    public:
+    double get_elapsed_time() const {return elapsed_time;}
+    float get_max_core_link_load() const {return max_core_link_load;}
+    float get_phi() const {return phi;}
+    result_routing_table get_routing_table() const {return routing_table;}
+    size_t get_num_attempts() const {return num_attempts;}
+    
+    private:
+    double elapsed_time;
+    float max_core_link_load;
+    float phi;
+    result_routing_table routing_table;
+    size_t num_attempts;
+};
+
+// Similarly, define a struct for MD_Nexullance_IT. The profiled time for execution is returned, 
+// the result also contains a list of max link load, a list of phi and the routing table.
+struct MD_IT_outputs{
+    MD_IT_outputs(double _elapsed_time, std::vector<float> _max_link_loads, std::vector<float> _phis, result_routing_table _routing_table, float _Objective_func) : 
+            elapsed_time(_elapsed_time), max_core_link_loads(_max_link_loads), phis(_phis), routing_table(_routing_table), Objective_func(_Objective_func) { }
+    public:
+    double get_elapsed_time() const {return elapsed_time;}
+    std::vector<float> get_max_core_link_loads() const {return max_core_link_loads;}
+    std::vector<float> get_phis() const {return phis;}
+    result_routing_table get_routing_table() const {return routing_table;}
+    float get_obj() const {return Objective_func;}
+
+    private:
+    double elapsed_time;
+    std::vector<float> max_core_link_loads;
+    std::vector<float> phis;
+    result_routing_table routing_table;
+    float Objective_func;
+};
 
 #endif // GRAPH_DEFINITIONS_HPP

@@ -46,7 +46,7 @@ class Nexullance_IT{
 
         path_id next_path_id;
         std::unordered_map<path_id, std::vector<Vertex>> path_id_to_path; // using vector here, because the shortest-path algorithm return vector<Vertex> as a path
-        std::unordered_map<path_id, float>** routing_tables; // a 2D-array of map, first index corresponds to source router id, second index the destination router id.
+        std::unordered_map<path_id, float>** routing_table; // a 2D-array of map, first index corresponds to source router id, second index the destination router id.
         float** link_load;
         std::vector<path_id>** link_path_ids;
         // float final_max_load;
@@ -59,4 +59,4 @@ class Nexullance_IT{
 
 
 };
-#endif // GRAPH_DEFINITIONS_HPP
+#endif

@@ -26,9 +26,9 @@ Nexullance_IT::Nexullance_IT(Graph& _input_graph, const float** _M_EPs,
     //======================
 
     next_path_id = 0;
-    routing_tables = new std::unordered_map<path_id, float>*[num_vertices];
+    routing_table = new std::unordered_map<path_id, float>*[num_vertices];
     for (int i = 0; i < num_vertices; i++) {
-        routing_tables[i] = new std::unordered_map<path_id, float>[num_vertices];
+        routing_table[i] = new std::unordered_map<path_id, float>[num_vertices];
     }
 
     link_load = new float*[num_vertices];
@@ -57,14 +57,14 @@ Nexullance_IT::Nexullance_IT(Graph& _input_graph, const float** _M_EPs,
 
 Nexullance_IT::~Nexullance_IT() {
     for (int i = 0; i < num_vertices; i++) {
-        delete[] routing_tables[i];
+        delete[] routing_table[i];
         delete[] link_load[i];
         delete[] link_path_ids[i];
         delete[] all_paths_all_s_d[i];
         delete[] M_R[i];
     }
     delete[] M_R;
-    delete[] routing_tables;
+    delete[] routing_table;
     delete[] link_load;
     delete[] link_path_ids;
     delete[] all_paths_all_s_d;
@@ -92,7 +92,7 @@ void Nexullance_IT::step_1(float _alpha, float _beta) {
     // clear and update routing table, update link load, update path ids
     for (int s = 0; s < num_vertices; s++) {
         for (int d = 0; d < num_vertices; d++) {
-            routing_tables[s][d].clear();
+            routing_table[s][d].clear();
             if(s==d){
                 continue;
             }
@@ -104,7 +104,7 @@ void Nexullance_IT::step_1(float _alpha, float _beta) {
             for (std::vector<Vertex> path: paths){
                 path_id path_id = next_path_id++;
                 path_id_to_path[path_id] = path;
-                routing_tables[s][d][path_id] = ECMP_weight;
+                routing_table[s][d][path_id] = ECMP_weight;
                 for (int l = 0; l < path.size() - 1; l++) {
                     Vertex u = path[l];
                     Vertex v = path[l+1];
@@ -123,11 +123,10 @@ void Nexullance_IT::step_1(float _alpha, float _beta) {
 
     // find the max value of link_load (float** , of size num_vertices*num_vertices)
     float max_load = 0.0;
-    for (int i = 0; i < num_vertices; i++) { // order of loops??
-        for (int j = 0; j < num_vertices; j++) {
-            if (link_load[i][j] > max_load) {
-                max_load = link_load[i][j];
-            }
+    // EdgeIterator ei, ei_end;
+    for (tie(ei, ei_end) = boost::edges(G); ei != ei_end; ei++) {
+        if (link_load[(*ei).m_source][(*ei).m_target] > max_load) {
+            max_load = link_load[(*ei).m_source][(*ei).m_target];
         }
     }
     // if(verbose)
@@ -142,41 +141,50 @@ void Nexullance_IT::step_1(float _alpha, float _beta) {
     result_max_loads_step_1.push_back(max_load);
     if(verbose)
         std::cout<<"result from step1: " << result_max_loads_step_1.back() << std::endl;
+
+
+    #ifdef DEBUG
+    std::cout << "Nexullance_IT step 1 done in debug mode " << std::endl;
+    #endif
+
     return;
 }
 
 bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshold, int min_attempts, int max_attempts) {
     
+    if (verbose)
+        std::cout<<"step 2: starting for step = "<< step <<std::endl;
+
     auto rng = std::default_random_engine {};
     int attempts = 0;
-    std::list<float> max_loads;
-    float max_load = 0;
-
+    std::list<float> max_loads_hist;
+    long last_decreased_path_id = -1;
+    long last_increased_path_id = -1;
 
     while (attempts < max_attempts) {
-
         float max_load = 0.0;
-        for (int i = 0; i < num_vertices; i++) { // order of loops??
-            for (int j = 0; j < num_vertices; j++) {
-                if (link_load[i][j] > max_load)
-                    max_load = link_load[i][j];
+        std::vector<std::pair<int, int>> max_load_indices;
+
+        EdgeIterator ei, ei_end;
+        for (tie(ei, ei_end) = boost::edges(G); ei != ei_end; ei++) {
+            size_t i = (*ei).m_source;
+            size_t j = (*ei).m_target;
+            if (link_load[i][j] > max_load) {
+                max_load = link_load[i][j];
+                max_load_indices.clear();
+                max_load_indices.push_back({i, j});
+            } else if (link_load[i][j] == max_load) {
+                max_load_indices.push_back({i, j});
             }
         }
      
-        // // first find the max value of link_load
-        // auto maxElement = std::max_element(link_load.begin(), link_load.end(),
-        //     [](const std::pair<Edge, float>& a, const std::pair<Edge, float>& b) {
-        //         return a.second < b.second;
-        //     });
-        // max_load = maxElement->second;
-        max_loads.push_back(max_load);
+        max_loads_hist.push_back(max_load);
         result_max_load_step_2=max_load;
 
         if(max_load <= max_access_load){
             if (verbose){
                 std::cout<<"max core link load reaches max access link load, terminating "<<std::endl;
             }
-            result_max_load_step_2=max_load;
             return false;
         }
 
@@ -184,153 +192,184 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
             std::cout<<"step2, it="<< attempts << ", max_load = " << max_load << ",estimated phi = " 
                 << total_flow/std::max(max_access_load, result_max_load_step_2)/(num_vertices*EPR)<< std::endl;   
 
-        if((attempts > min_attempts) && (( std::accumulate(std::prev(max_loads.end(), min_attempts/2), max_loads.end(), 0.0f)/((float)min_attempts) - max_load)<threshold)){
+        if((attempts > min_attempts) && (( std::accumulate(std::prev(max_loads_hist.end(), min_attempts/2), max_loads_hist.end(), 0.0f)/((float)min_attempts) - max_load)<threshold)){
             if (verbose){
                 std::cout<<"step 2: low progress, terminating for step = "<< step <<std::endl;
-                std::cout<<"step 2: found max link load" << max_load <<std::endl;
+                std::cout<<"step 2: found max link load ????" << max_load <<std::endl;
             }
             num_attempts_step_2 += attempts;
             return true;
         }
         bool success_attempt = false;
 
-        for (int i = 0; i < num_vertices; i++) { // order of loops??
-            for (int j = 0; j < num_vertices; j++) {
-                if (link_load[i][j] < max_load){
-                    continue;
+        // iterate through max_load_indices
+        for (auto item: max_load_indices) {
+            int i = item.first;
+            int j = item.second;
+            #ifdef DEBUG
+            assert(link_load[i][j] == max_load && "link load should be max load");
+            #endif
+            std::vector<path_id> path_ids = link_path_ids[i][j];
+
+            std::multimap<float, path_id, std::greater<float>> sorted_path_ids;
+            for (auto old_path_id: path_ids) {
+                std::vector<Vertex> old_path = path_id_to_path[old_path_id];
+                int src = old_path.front();
+                int dst = old_path.back();
+                float contribution = routing_table[src][dst][old_path_id]*M_R[src][dst]/Cap_core;
+                sorted_path_ids.insert(std::make_pair(contribution, old_path_id));
+            }
+
+            for (auto item: sorted_path_ids) {
+                path_id old_path_id = item.second;
+                std::vector<Vertex> old_path = path_id_to_path[old_path_id];
+                Vertex src = old_path.front();
+                Vertex dst = old_path.back();
+
+                if(verbose){
+                    std::cout<<"step 2: starting with old path: " ;
+                    for(auto v: old_path)
+                        std::cout<<v<<" ";
+                    std::cout<<std::endl;
                 }
-                std::vector<path_id> path_ids = link_path_ids[i][j];
+                        
+                std::vector<std::vector<Vertex>> all_paths;
+                compute_all_shortest_paths_single_s_d(G, src, dst, all_paths, weightmap);
 
-                std::multimap<float, path_id, std::greater<float>> sorted_path_ids;
-                for (auto old_path_id: path_ids) {
-                    std::vector<Vertex> old_path = path_id_to_path[old_path_id];
-                    int src = old_path.front();
-                    int dst = old_path.back();
-                    float contribution = routing_tables[src][dst][old_path_id]*M_R[src][dst]/Cap_core;
-                    sorted_path_ids.insert(std::make_pair(contribution, old_path_id));
-                }
+                if(verbose)
+                    std::cout<<"step 2: found " << all_paths.size() << " new paths for s = "<<src<<" d = "<<dst<<std::endl;
 
-                for (auto item: sorted_path_ids) {
-                    path_id old_path_id = item.second;
-                    std::vector<Vertex> old_path = path_id_to_path[old_path_id];
-                    Vertex src = old_path.front();
-                    Vertex dst = old_path.back();
+                std::shuffle(std::begin(all_paths), std::end(all_paths), rng);
 
-                    if(verbose){
-                        std::cout<<"step 2: starting with old path: " ;
-                        for(auto v: old_path)
-                            std::cout<<v<<" ";
-                        std::cout<<std::endl;
-                    }
-                            
-                    std::vector<std::vector<Vertex>> all_paths;
-                    compute_all_shortest_paths_single_s_d(G, src, dst, all_paths, weightmap);
+                for(std::vector<Vertex> new_path: all_paths){
+                    if(new_path != old_path){
 
-                    if(verbose)
-                        std::cout<<"step 2: found " << all_paths.size() << " new paths for s = "<<src<<" d = "<<dst<<std::endl;
+                        float new_path_max_load = 0.0;
+                        for (size_t l = 0; l < new_path.size() - 1; l++)
+                            if (link_load[new_path[l]][new_path[l+1]] > new_path_max_load)
+                                new_path_max_load = link_load[new_path[l]][new_path[l+1]];
+                        
+                        if(new_path_max_load == max_load)  continue;
+                        #ifdef DEBUG
+                        assert(new_path_max_load < max_load && "new path max load should be less than max load");
+                        #endif
 
-                    std::shuffle(std::begin(all_paths), std::end(all_paths), rng);
-
-                    for(std::vector<Vertex> new_path: all_paths){
-                        if(new_path != old_path){
-                            success_attempt = true;
-                            attempts++;
-
-                            if(verbose){
-                                std::cout<<"step 2: starting with new path: " ;
-                                for(auto v: new_path)
-                                    std::cout<<v<<" ";
-                                std::cout<<std::endl;
-                            }
-                            
-                            //update the paths    
-                            float delta_weigth = NULL;
-                            std::unordered_map<path_id, float>& current_routing_table = routing_tables[src][dst];
-
-                            auto iter = current_routing_table.find(old_path_id);
-                            assert(iter != current_routing_table.end());
-                            float old_path_weight = iter->second;
-
-                            bool new_path_found = false;
-                            path_id new_path_id = NULL;
-                            for (auto it = current_routing_table.begin(); it != current_routing_table.end(); ++it) {
-                                if (path_id_to_path[it->first] == new_path) {
-                                    new_path_found = true;
-                                    new_path_id = it->first;
-                                    float prev_path_weight = it->second;
-                                    delta_weigth = std::min(step, std::min(old_path_weight, 1 - it->second)); 
-                                    current_routing_table.erase(it);
-                                    current_routing_table.insert(std::make_pair(new_path_id, prev_path_weight+delta_weigth));
-                                    // it->second += delta_weigth; // this does not directly write into the data of "routing_tables"
-                                    break;
-                                }
-                            }
-                            if(!new_path_found){
-                                new_path_id = next_path_id++;
-                                path_id_to_path[new_path_id] = new_path;
-                                delta_weigth = std::min(step, old_path_weight);
-                                current_routing_table.insert(std::make_pair(new_path_id, delta_weigth));                
-                                // current_routing_table[new_path_id] = delta_weigth;
-                            }
-
-                            // iterate over the new path and update the link load and path ids
-                            for (int l = 0; l < new_path.size() - 1; l++) {
-                                Vertex u = new_path[l];
-                                Vertex v = new_path[l+1];
-                                Edge e = boost::edge(u, v, G).first; // the boost::edge(u, v, G) returns a pair<Edge edge(u,v), bool found>
-                                link_load[e.m_source][e.m_target] += delta_weigth*M_R[src][dst]/Cap_core; // TODO: to further optimize, divide Cap_core on the M_R at the beginning?
-                                // // compare with max_load, update if this is higher
-                                // if (link_load[e.m_source][e.m_target] > (max_load + 0.001)) {
-                                //     assert(false &&"should not happen");
-                                //     max_load = link_load[e.m_source][e.m_target];
-                                // }
-                                
-                                boost::put(boost::edge_weight, G, e, _alpha + pow(link_load[e.m_source][e.m_target] ,_beta));
-                                if(!new_path_found)
-                                    link_path_ids[e.m_source][e.m_target].push_back(new_path_id);
-                            }
-                                // current_routing_table[old_path_id] -= delta_weigth;
-                                current_routing_table.erase(old_path_id);
-                                current_routing_table.insert(std::make_pair(old_path_id, old_path_weight-delta_weigth));
-
-                            // iterate over the old path and update the link load and path ids
-                            for (int l = 0; l < old_path.size() - 1; l++) {
-                                Vertex u = old_path[l];
-                                Vertex v = old_path[l+1];
-                                Edge e = boost::edge(u, v, G).first; // the boost::edge(u, v, G) returns a pair<Edge edge(u,v), bool found>
-                                link_load[e.m_source][e.m_target] -= delta_weigth*M_R[src][dst]/Cap_core; // TODO: to further optimize, divide Cap_core on the M_R at the beginning?
-                                boost::put(boost::edge_weight, G, e, _alpha + pow(link_load[e.m_source][e.m_target],_beta));
-                            
-                                if (current_routing_table[old_path_id] < 0.00001) {
-                                    auto iter = std::find(link_path_ids[e.m_source][e.m_target].begin(), link_path_ids[e.m_source][e.m_target].end(), old_path_id);
-                                    if(iter != link_path_ids[e.m_source][e.m_target].end()){
-                                        link_path_ids[e.m_source][e.m_target].erase(iter);
-                                    }
-                                }
-                            }
-                            if (current_routing_table[old_path_id] < 0.00001) {
-                                current_routing_table.erase(old_path_id);
-                                path_id_to_path.erase(old_path_id);
-                            }
-                            
-        
-                            break;
+                        if(verbose){
+                            std::cout<<"step 2: starting with new path: " ;
+                            for(auto v: new_path)
+                                std::cout<<v<<" ";
+                            std::cout<<std::endl;
                         }
-                    }
+                        
+                        //update the paths    
+                        float delta_weigth = -1.0;
+                        std::unordered_map<path_id, float>& current_routing_table = routing_table[src][dst];
 
-                    if(success_attempt ){
+                        auto iter = current_routing_table.find(old_path_id);
+                        #ifdef DEBUG
+                        assert(iter != current_routing_table.end());
+                        #endif
+                        float old_path_weight = iter->second;
+
+                        bool new_path_found = false;
+                        long new_path_id = -1;
+                        float prev_path_weight = -1.0;
+                        for (auto it = current_routing_table.begin(); it != current_routing_table.end(); ++it) {
+                            if (path_id_to_path[it->first] == new_path) {
+                                new_path_found = true;
+                                new_path_id = it->first;
+                                prev_path_weight = it->second;
+                                break;
+                            }
+                        }
+                        if(new_path_found){
+                            #ifdef DEBUG
+                            assert(new_path_id != -1);
+                            assert(prev_path_weight != -1.0);
+                            #endif
+                            if ((old_path_id == last_increased_path_id) && (new_path_id == last_decreased_path_id)){
+                                if(verbose){
+                                    std::cout<<"step 2: stopped with the new path for avoiding deadlock "<<std::endl;
+                                }
+                                continue;
+                            }
+                            delta_weigth = std::min(std::min(step, std::min(old_path_weight, 1 - prev_path_weight)), 
+                                            Cap_core*(max_load-new_path_max_load)/M_R[src][dst]); 
+
+                            current_routing_table.erase(new_path_id);
+                            current_routing_table.insert(std::make_pair(new_path_id, prev_path_weight+delta_weigth));
+
+                        }else{
+                            #ifdef DEBUG
+                            assert(prev_path_weight == -1.0);
+                            #endif
+
+                            new_path_id = next_path_id++;
+                            path_id_to_path[new_path_id] = new_path;
+                            delta_weigth = std::min(std::min(step, old_path_weight), 
+                                            Cap_core*(max_load-new_path_max_load)/M_R[src][dst]);
+                            current_routing_table.insert(std::make_pair(new_path_id, delta_weigth));                
+                            // current_routing_table[new_path_id] = delta_weigth;
+                        }
+                        success_attempt = true;
+                        attempts++;
+                        #ifdef DEBUG
+                        assert(delta_weigth != -1.0);
+                        #endif
+
+                        last_decreased_path_id = old_path_id;
+                        last_increased_path_id = new_path_id;
+
+                        // iterate over the new path and update the link load and path ids
+                        for (int l = 0; l < new_path.size() - 1; l++) {
+                            Vertex u = new_path[l];
+                            Vertex v = new_path[l+1];
+                            Edge e = boost::edge(u, v, G).first; // the boost::edge(u, v, G) returns a pair<Edge edge(u,v), bool found>
+                            link_load[e.m_source][e.m_target] += delta_weigth*M_R[src][dst]/Cap_core; // TODO: to further optimize, divide Cap_core on the M_R at the beginning?
+                           
+                            boost::put(boost::edge_weight, G, e, _alpha + pow(link_load[e.m_source][e.m_target] ,_beta));
+                            if(!new_path_found)
+                                link_path_ids[e.m_source][e.m_target].push_back(new_path_id);
+                        }
+                        current_routing_table.erase(old_path_id);
+                        current_routing_table.insert(std::make_pair(old_path_id, old_path_weight-delta_weigth));
+
+                        // iterate over the old path and update the link load and path ids
+                        for (int l = 0; l < old_path.size() - 1; l++) {
+                            Vertex u = old_path[l];
+                            Vertex v = old_path[l+1];
+                            Edge e = boost::edge(u, v, G).first; // the boost::edge(u, v, G) returns a pair<Edge edge(u,v), bool found>
+                            link_load[e.m_source][e.m_target] -= delta_weigth*M_R[src][dst]/Cap_core; // TODO: to further optimize, divide Cap_core on the M_R at the beginning?
+                            boost::put(boost::edge_weight, G, e, _alpha + pow(link_load[e.m_source][e.m_target],_beta));
+                        
+                            if (current_routing_table[old_path_id] < 0.00001) {
+                                auto iter = std::find(link_path_ids[e.m_source][e.m_target].begin(), link_path_ids[e.m_source][e.m_target].end(), old_path_id);
+                                if(iter != link_path_ids[e.m_source][e.m_target].end()){
+                                    link_path_ids[e.m_source][e.m_target].erase(iter);
+                                }
+                            }
+                        }
+                        if (current_routing_table[old_path_id] < 0.00001) {
+                            current_routing_table.erase(old_path_id);
+                            path_id_to_path.erase(old_path_id);
+                        }
+                            
                         break;
-                    }else{
-                        continue;
                     }
-
                 }
 
-                if(success_attempt){
+                if(success_attempt ){
                     break;
                 }else{
                     continue;
                 }
+
+            }
+
+            if(success_attempt){
+                break;
+            }else{
+                continue;
             }
         }
 
@@ -372,14 +411,14 @@ void Nexullance_IT::optimize(int num_step_1, float alpha_step_1, float beta_step
 
 result_routing_table Nexullance_IT::get_routing_table(){
     result_routing_table result = result_routing_table();
-    // iterate over "routing_tables" and convert it to "result_routing_table"
+    // iterate over "routing_table" and convert it to "result_routing_table"
     for (int s = 0; s < num_vertices; s++) {
         for (int d = 0; d < num_vertices; d++) {
             if (s==d)
                 continue;
 
             std::vector< std::pair< std::vector<Vertex>,float> > paths = std::vector< std::pair< std::vector<Vertex>,float> >();
-            for (auto item: routing_tables[s][d]) {
+            for (auto item: routing_table[s][d]) {
                 std::vector<Vertex> path = path_id_to_path[item.first];
                 float weight = item.second;
                 paths.push_back(std::make_pair(path, weight));
@@ -396,7 +435,7 @@ result_routing_table Nexullance_IT::get_routing_table(){
 //         for (int d = 0; d < num_vertices; d++) {
 //             if (s==d)
 //                 continue;
-//             for (auto item: routing_tables[s][d]) {
+//             for (auto item: routing_table[s][d]) {
 //                 std::vector<Vertex> path = path_id_to_path[item.first];
 //                 float weight = item.second;
 //                 ave += path.size()*weight;

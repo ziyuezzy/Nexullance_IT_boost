@@ -79,7 +79,11 @@
         "valarray": "cpp",
         "variant": "cpp",
         "core": "cpp",
-        "dense": "cpp"
+        "dense": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "ranges": "cpp",
+        "stop_token": "cpp"
     },
     "cmake.sourceDirectory": "/groups/ilabt-imec-be/hpcnetworksimulation/ziyzhang/topology-research/nexullance/IT_boost/src",
 
