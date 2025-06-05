@@ -21,9 +21,9 @@ class diff_Nexullance_IT{
         // and optimize the routing table accordingly.
 
         IT_outputs optimize_for_M_EPs(float** M_EPs, float _alpha, float _beta, float threshold, 
-            float min_step, int min_attempts, int max_attempts);
+            size_t max_num_step2, int min_attempts, int max_attempts);
 
-        // return <bool terminate or not, num_attempts, max_core_load>
+        // return <bool continue or not, num_attempts, max_core_load>
         std::tuple<bool, size_t, float> optimize_for_M_R_fixed_step(float** M_R, float _alpha, 
             float _beta, float threshold, float step, int min_attempts, int max_attempts, float max_access_load, float total_flow);
 

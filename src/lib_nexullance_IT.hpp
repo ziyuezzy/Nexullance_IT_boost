@@ -41,12 +41,12 @@ class Nexullance_IT_interface {
     MD_IT_outputs run_MD_IT(std::vector<Eigen::MatrixXf> M_EPs_s, std::vector<float> weights, const int EPR);
 
     inline void set_parameters(float alpha, float beta, float stepping_threshold, 
-                       int num_steppings, int max_attempts, int min_attempts, bool cal_least_margins=false){
+                       int max_num_step2, int max_attempts, int min_attempts, bool cal_least_margins=false){
         _alpha = alpha;
         _beta = beta;
         // _init_step = init_step;
         _stepping_threshold = stepping_threshold;
-        _num_steppings = num_steppings;
+        _max_num_step2 = max_num_step2;
         _max_attempts = max_attempts;
         _min_attempts = min_attempts;
         _cal_least_margins = cal_least_margins;
@@ -64,7 +64,7 @@ class Nexullance_IT_interface {
     float _beta=7.0f;
     // float _init_step = 0.5f;
     float _stepping_threshold = 0.0001f;
-    int _num_steppings = 5; // number of times to adjust step size
+    int _max_num_step2 = 5; // number of times to adjust step size
     int _max_attempts = 1000000;
     int _min_attempts = 100;
     bool _cal_least_margins = false;
@@ -91,15 +91,14 @@ class diff_Nexullance_IT_interface {
     IT_outputs add_next_matrix(Eigen::MatrixXf M_EPs);
 
     inline void set_parameters(float alpha, float beta, float stepping_threshold, 
-                       int num_steppings, int max_attempts, int min_attempts, bool cal_least_margins=false){
+                       int max_num_step2, int max_attempts, int min_attempts){
         _alpha = alpha;
         _beta = beta;
         // _init_step = init_step;
         _stepping_threshold = stepping_threshold;
-        _num_steppings = num_steppings;
+        _max_num_step2 = max_num_step2;
         _max_attempts = max_attempts;
         _min_attempts = min_attempts;
-        _cal_least_margins = cal_least_margins;
         }
 
 
@@ -116,11 +115,9 @@ class diff_Nexullance_IT_interface {
     float _beta=7.0f;
     // float _init_step = 0.5f;
     float _stepping_threshold = 0.0001f;
-    float _min_step = 0.01f;
-    int _num_steppings = 5; // number of times to adjust step size
+    int _max_num_step2 = 5; // number of times to adjust step size
     int _max_attempts = 1000000;
     int _min_attempts = 100;
-    bool _cal_least_margins = false;
 
     // These above parameters are configured in method "set_parameters"
     

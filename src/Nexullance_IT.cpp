@@ -143,18 +143,15 @@ void Nexullance_IT::step_1(float _alpha, float _beta) {
         std::cout<<"result from step1: " << result_max_loads_step_1.back() << std::endl;
 
 
-    #ifdef DEBUG
-    std::cout << "Nexullance_IT step 1 done in debug mode " << std::endl;
-    #endif
+    // #ifdef DEBUG
+    // std::cout << "Nexullance_IT step 1 done in debug mode " << std::endl;
+    // #endif
 
     return;
 }
 
 bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshold, int min_attempts, int max_attempts) {
     
-    if (verbose)
-        std::cout<<"step 2: starting for step = "<< step <<std::endl;
-
     auto rng = std::default_random_engine {};
     int attempts = 0;
     std::list<float> max_loads_hist;
@@ -189,13 +186,13 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
         }
 
         if(verbose)
-            std::cout<<"step2, it="<< attempts << ", max_load = " << max_load << ",estimated phi = " 
+            std::cout<<"step2, " << "step_value= "<< step << ", it= " << attempts << ", max_load = " << max_load << ",estimated phi = " 
                 << total_flow/std::max(max_access_load, result_max_load_step_2)/(num_vertices*EPR)<< std::endl;   
 
         if((attempts > min_attempts) && (( std::accumulate(std::prev(max_loads_hist.end(), min_attempts/2), max_loads_hist.end(), 0.0f)/((float)min_attempts) - max_load)<threshold)){
             if (verbose){
                 std::cout<<"step 2: low progress, terminating for step = "<< step <<std::endl;
-                std::cout<<"step 2: found max link load ????" << max_load <<std::endl;
+                std::cout<<"step 2: found max link load" << max_load <<std::endl;
             }
             num_attempts_step_2 += attempts;
             return true;
@@ -226,18 +223,18 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                 Vertex src = old_path.front();
                 Vertex dst = old_path.back();
 
-                if(verbose){
-                    std::cout<<"step 2: starting with old path: " ;
-                    for(auto v: old_path)
-                        std::cout<<v<<" ";
-                    std::cout<<std::endl;
-                }
+                // if(verbose){
+                //     std::cout<<"step 2: starting with old path: " ;
+                //     for(auto v: old_path)
+                //         std::cout<<v<<" ";
+                //     std::cout<<std::endl;
+                // }
                         
                 std::vector<std::vector<Vertex>> all_paths;
                 compute_all_shortest_paths_single_s_d(G, src, dst, all_paths, weightmap);
 
-                if(verbose)
-                    std::cout<<"step 2: found " << all_paths.size() << " new paths for s = "<<src<<" d = "<<dst<<std::endl;
+                // if(verbose)
+                //     std::cout<<"step 2: found " << all_paths.size() << " new paths for s = "<<src<<" d = "<<dst<<std::endl;
 
                 std::shuffle(std::begin(all_paths), std::end(all_paths), rng);
 
@@ -254,12 +251,12 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
                         assert(new_path_max_load < max_load && "new path max load should be less than max load");
                         #endif
 
-                        if(verbose){
-                            std::cout<<"step 2: starting with new path: " ;
-                            for(auto v: new_path)
-                                std::cout<<v<<" ";
-                            std::cout<<std::endl;
-                        }
+                        // if(verbose){
+                        //     std::cout<<"step 2: starting with new path: " ;
+                        //     for(auto v: new_path)
+                        //         std::cout<<v<<" ";
+                        //     std::cout<<std::endl;
+                        // }
                         
                         //update the paths    
                         float delta_weigth = -1.0;
@@ -393,7 +390,10 @@ bool Nexullance_IT::step_2(float _alpha, float _beta, float step, float threshol
 
 void Nexullance_IT::optimize(int num_step_1, float alpha_step_1, float beta_step_1, int max_num_step_2, 
         float alpha_step_2, float beta_step_2, int step_2_min_attempts, int step_2_stepping_threshold, int step_2_max_attemtps){
+    
     assert(num_step_1 >= 1 and "num_step_1 should be a positive integer greater than 1.");
+    if (verbose)    std::cout<<"Nexullance_IT starts optimization for the input demand matrix"<<std::endl; 
+    
     for (int i = 0; i < num_step_1; i++) {
         step_1(alpha_step_1, beta_step_1);
     }

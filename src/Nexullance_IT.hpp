@@ -17,6 +17,8 @@ class Nexullance_IT{
 
         // void get_finial_max_load();
         void step_1(float _alpha, float _beta);
+
+        // return whether to continue or not
         bool step_2(float _alpha, float _beta, float step, float threshold=0.001, 
                     int min_attempts=50, int max_attempts=100000);
         void optimize(int num_step_1, float alpha_step_1, float beta_step_1, int max_num_step_2, 

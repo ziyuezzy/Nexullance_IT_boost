@@ -54,14 +54,15 @@ struct IT_outputs{
 // Similarly, define a struct for MD_Nexullance_IT. The profiled time for execution is returned, 
 // the result also contains a list of max link load, a list of phi and the routing table.
 struct MD_IT_outputs{
-    MD_IT_outputs(double _elapsed_time, std::vector<float> _max_link_loads, std::vector<float> _phis, result_routing_table _routing_table, float _Objective_func) : 
-            elapsed_time(_elapsed_time), max_core_link_loads(_max_link_loads), phis(_phis), routing_table(_routing_table), Objective_func(_Objective_func) { }
+    MD_IT_outputs(double _elapsed_time, std::vector<float> _max_link_loads, std::vector<float> _phis, result_routing_table _routing_table, float _Objective_func, size_t _num_attempts) : 
+            elapsed_time(_elapsed_time), max_core_link_loads(_max_link_loads), phis(_phis), routing_table(_routing_table), Objective_func(_Objective_func), num_attempts(_num_attempts) { }
     public:
     double get_elapsed_time() const {return elapsed_time;}
     std::vector<float> get_max_core_link_loads() const {return max_core_link_loads;}
     std::vector<float> get_phis() const {return phis;}
     result_routing_table get_routing_table() const {return routing_table;}
     float get_obj() const {return Objective_func;}
+    size_t get_num_attempts() const {return num_attempts;}
 
     private:
     double elapsed_time;
@@ -69,6 +70,7 @@ struct MD_IT_outputs{
     std::vector<float> phis;
     result_routing_table routing_table;
     float Objective_func;
+    size_t num_attempts;
 };
 
 #endif // GRAPH_DEFINITIONS_HPP

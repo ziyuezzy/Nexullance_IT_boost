@@ -42,7 +42,7 @@ IT_outputs Nexullance_IT_interface::run_IT(Eigen::MatrixXf M_EP, const int EPR){
     delete[] matrix;
 
     auto start = std::chrono::high_resolution_clock::now();
-    nexu_it.optimize(1, 1.0, 1.0, _num_steppings+1, _alpha, _beta, _min_attempts, _stepping_threshold, _max_attempts); // TODO: pass all params
+    nexu_it.optimize(1, 1.0, 1.0, _max_num_step2+1, _alpha, _beta, _min_attempts, _stepping_threshold, _max_attempts); // TODO: pass all params
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
 
@@ -78,12 +78,13 @@ MD_IT_outputs Nexullance_IT_interface::run_MD_IT(std::vector<Eigen::MatrixXf> M_
                                     _Cap_core, _Cap_access, _debug);
 
     auto start = std::chrono::high_resolution_clock::now();
-    md_nexu_it.optimize(1, 1.0, 1.0, _num_steppings+1, _alpha, _beta, _min_attempts, 
+    md_nexu_it.optimize(1, 1.0, 1.0, _max_num_step2+1, _alpha, _beta, _min_attempts, 
                         _stepping_threshold, _max_attempts, _cal_least_margins);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
 
-    MD_IT_outputs result = MD_IT_outputs(elapsed.count(), md_nexu_it.get_max_core_load_vec(), md_nexu_it.get_phis(), md_nexu_it.get_routing_table(), md_nexu_it.get_obj());
+    MD_IT_outputs result = MD_IT_outputs(elapsed.count(), md_nexu_it.get_max_core_load_vec(), md_nexu_it.get_phis(), 
+                                md_nexu_it.get_routing_table(), md_nexu_it.get_obj(), md_nexu_it.num_attempts_step_2);
 
     return result;
 }
@@ -154,7 +155,7 @@ IT_outputs diff_Nexullance_IT_interface::add_next_matrix(Eigen::MatrixXf M_EPs){
         for (int j = 0; j < num_EPs; ++j)
             matrix[i][j] = M_EPs(i, j);
     //===========
-    IT_outputs result = diff_nexu_it->optimize_for_M_EPs(matrix, _alpha, _beta, _stepping_threshold, _min_step, _min_attempts, _max_attempts);
+    IT_outputs result = diff_nexu_it->optimize_for_M_EPs(matrix, _alpha, _beta, _stepping_threshold, _max_num_step2+1, _min_attempts, _max_attempts);
     delete[] matrix;
     return result;
 }
@@ -194,7 +195,8 @@ PYBIND11_MODULE(Nexullance_IT_cpp, m) {
         .def("get_max_core_link_load", &MD_IT_outputs::get_max_core_link_loads)
         .def("get_phis", &MD_IT_outputs::get_phis)
         .def("get_routing_table", &MD_IT_outputs::get_routing_table)
-        .def("get_obj", &MD_IT_outputs::get_obj);
+        .def("get_obj", &MD_IT_outputs::get_obj)
+        .def("get_num_attempts", &MD_IT_outputs::get_num_attempts);
         // .def("get_weighted_sum_phi", &MD_IT_outputs::get_weighted_sum_phi)
 
 }

@@ -54,7 +54,7 @@ diff_Nexullance_IT::~diff_Nexullance_IT() {
 void diff_Nexullance_IT::initialize_routing_table() {
     compute_all_shortest_paths_all_s_d(G, all_paths_all_s_d, weightmap);
     if(verbose)
-        std::cout<<"step 1: computed all shortest paths all s d"<<std::endl;
+        std::cout<<"diff nexu initialization: computed all shortest paths all s d"<<std::endl;
 
     // then set all loads to 0.0, empty path ids, empty path_id_to_path
     path_id_to_path.clear();
@@ -63,7 +63,6 @@ void diff_Nexullance_IT::initialize_routing_table() {
         link_path_ids[(*ei).m_source][(*ei).m_target].clear();
 
     next_path_id = 0;
-    if(verbose)     std::cout<<"step 1: cleared link load and path ids"<<std::endl;
     
     // clear and update routing table, assign path ids
     for (int s = 0; s < num_vertices; s++) {
@@ -86,7 +85,7 @@ void diff_Nexullance_IT::initialize_routing_table() {
             }
         }
     }
-    if(verbose)     std::cout<<"step 1: updated routing table and assigned path ids"<<std::endl;
+    if(verbose)     std::cout<<"diff nexu initialization: updated routing table and assigned path ids"<<std::endl;
     return;
 }
 
@@ -103,8 +102,9 @@ void diff_Nexullance_IT::initialize_routing_table() {
 // }
 
 IT_outputs diff_Nexullance_IT::optimize_for_M_EPs(float** M_EPs, float _alpha, float _beta, float threshold, 
-            float min_step, int min_attempts, int max_attempts){
+            size_t max_num_step2, int min_attempts, int max_attempts){
 
+    if (verbose)    std::cout<<"diff_Nexullance_IT starts optimization for the input demand matrix"<<std::endl; 
     // start timer
     auto start = std::chrono::high_resolution_clock::now();
     // preparation
@@ -135,17 +135,19 @@ IT_outputs diff_Nexullance_IT::optimize_for_M_EPs(float** M_EPs, float _alpha, f
         }
     }
 
-    bool terminate = false;
+    bool to_continue = true;
     size_t tot_attempts = 0;
     size_t num_attempts;
     float max_core_load;
     float step = 0.5;
-    while ((step > min_step) && !terminate)
+    size_t num_step2s = 0;
+    while ((max_num_step2 > num_step2s) && to_continue)
     {
-        std::tie(terminate, num_attempts, max_core_load) = optimize_for_M_R_fixed_step(M_R, 
+        std::tie(to_continue, num_attempts, max_core_load) = optimize_for_M_R_fixed_step(M_R, 
             _alpha, _beta, step, threshold, min_attempts, max_attempts, max_access_load, total_flow);
         step *= 0.5;
         tot_attempts += num_attempts;
+        num_step2s++;
     }
 
     // free the matrix
@@ -212,8 +214,8 @@ std::tuple<bool, size_t, float> diff_Nexullance_IT::optimize_for_M_R_fixed_step(
     
         if((attempts > min_attempts) && (( std::accumulate(std::prev(max_loads_hist.end(), min_attempts/2), max_loads_hist.end(), 0.0f)/((float)min_attempts) - max_load)<threshold)){
             if (verbose){
-                std::cout<<"step 2: low progress, terminating for step = "<< step <<std::endl;
-                std::cout<<"step 2: found max link load" << result_max_load <<std::endl;
+                std::cout<<"diff nexu:: low progress, terminating for step = "<< step <<std::endl;
+                std::cout<<"diff nexu:: found max link load" << result_max_load <<std::endl;
             }
             return std::make_tuple(true, attempts, result_max_load);
         }
@@ -243,18 +245,18 @@ std::tuple<bool, size_t, float> diff_Nexullance_IT::optimize_for_M_R_fixed_step(
                 Vertex src = old_path.front();
                 Vertex dst = old_path.back();
 
-                if(verbose){
-                    std::cout<<"step 2: starting with old path: " ;
-                    for(auto v: old_path)
-                        std::cout<<v<<" ";
-                    std::cout<<std::endl;
-                }
+                // if(verbose){
+                //     std::cout<<"diff nexu:: starting with old path: " ;
+                //     for(auto v: old_path)
+                //         std::cout<<v<<" ";
+                //     std::cout<<std::endl;
+                // }
                         
                 std::vector<std::vector<Vertex>> all_paths;
                 compute_all_shortest_paths_single_s_d(G, src, dst, all_paths, weightmap);
 
-                if(verbose)
-                    std::cout<<"step 2: found " << all_paths.size() << " new paths for s = "<<src<<" d = "<<dst<<std::endl;
+                // if(verbose)
+                //     std::cout<<"diff nexu:: found " << all_paths.size() << " new paths for s = "<<src<<" d = "<<dst<<std::endl;
 
                 std::shuffle(std::begin(all_paths), std::end(all_paths), rng);
 
@@ -271,12 +273,12 @@ std::tuple<bool, size_t, float> diff_Nexullance_IT::optimize_for_M_R_fixed_step(
                         assert(new_path_max_load < max_load && "new path max load should be less than max load");
                         #endif
 
-                        if(verbose){
-                            std::cout<<"step 2: starting with new path: " ;
-                            for(auto v: new_path)
-                                std::cout<<v<<" ";
-                            std::cout<<std::endl;
-                        }
+                        // if(verbose){
+                        //     std::cout<<"diff nexu:: starting with new path: " ;
+                        //     for(auto v: new_path)
+                        //         std::cout<<v<<" ";
+                        //     std::cout<<std::endl;
+                        // }
                         
                         //update the paths    
                         float delta_weigth = -1.0;
@@ -306,7 +308,7 @@ std::tuple<bool, size_t, float> diff_Nexullance_IT::optimize_for_M_R_fixed_step(
                             #endif
                             if ((old_path_id == last_increased_path_id) && (new_path_id == last_decreased_path_id)){
                                 if(verbose){
-                                    std::cout<<"step 2: stopped with the new path for avoiding deadlock "<<std::endl;
+                                    std::cout<<"diff nexu:: stopped with the new path for avoiding deadlock "<<std::endl;
                                 }
                                 continue;
                             }
@@ -400,7 +402,7 @@ std::tuple<bool, size_t, float> diff_Nexullance_IT::optimize_for_M_R_fixed_step(
     }
          
     // if(verbose)
-        // std::cout<<"step 2: found max link load" << max_load <<std::endl;
+        // std::cout<<"diff nexu:: found max link load" << max_load <<std::endl;
     std::cout<<"max number of attemtps reached with step_value = "<<step<<", threshold = "<<threshold<<", min_attempts = "<<min_attempts<<", max_attempts = "<<max_attempts<<std::endl;
     return std::make_tuple(true, attempts, result_max_load);    
 }
