@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Usage: ./gen_flamegraph.sh <python_program> [output_name] [sample_frequency]
-# Example: ./gen_flamegraph.sh my_script.py my_profile 99
+# Usage: ./gen_flamegraph.sh <python_program> [python_args...] [--output <output_name>] [--freq <sample_frequency>]
+# Example: ./gen_flamegraph.sh my_script.py arg1 arg2 --output my_profile --freq 99
 
 set -e  # Exit on any error
 
@@ -15,15 +15,38 @@ if [ ! -d "$FLAMEGRAPH_DIR" ]; then
 fi
 # Parse arguments
 PYTHON_PROGRAM="$1"
-OUTPUT_NAME="${2:-flamegraph}"
-SAMPLE_FREQ="${3:-99}"
+shift
+
+# Default values
+OUTPUT_NAME="flamegraph"
+SAMPLE_FREQ="99"
+PYTHON_ARGS=()
+
+# Parse remaining arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --output)
+            OUTPUT_NAME="$2"
+            shift 2
+            ;;
+        --freq)
+            SAMPLE_FREQ="$2"
+            shift 2
+            ;;
+        *)
+            PYTHON_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
 
 # Validate input
 if [ -z "$PYTHON_PROGRAM" ]; then
-    echo "Usage: $0 <python_program> [output_name] [sample_frequency]"
+    echo "Usage: $0 <python_program> [python_args...] [--output <output_name>] [--freq <sample_frequency>]"
     echo "  python_program: Path to the Python script to profile"
-    echo "  output_name: Name for output files (default: flamegraph)"
-    echo "  sample_frequency: Sampling frequency in Hz (default: 99)"
+    echo "  python_args: Arguments to pass to the Python script"
+    echo "  --output: Name for output files (default: flamegraph)"
+    echo "  --freq: Sampling frequency in Hz (default: 99)"
     exit 1
 fi
 
@@ -52,14 +75,14 @@ trap cleanup EXIT
 
 # Record performance data
 echo "Recording performance data..."
-perf record -g -F "$SAMPLE_FREQ" --call-graph dwarf python3 "$PYTHON_PROGRAM"
+perf record -g -F "$SAMPLE_FREQ" --call-graph dwarf python3.12 "$PYTHON_PROGRAM" "${PYTHON_ARGS[@]}"
 
 # Generate flame graph
 echo "Generating flame graph..."
 cd "$FLAMEGRAPH_DIR"
 perf script -i ../perf.data | ./stackcollapse-perf.pl > "${OUTPUT_NAME}.perf-folded"
-./flamegraph.pl "${OUTPUT_NAME}.perf-folded" > "../../${OUTPUT_NAME}.svg"
-cd -
 
-echo "Flame graph generated: ${OUTPUT_NAME}.svg"
-echo "Folded data saved: FlameGraph/${OUTPUT_NAME}.perf-folded"
+# Generate interactive SVG with explicit options
+./flamegraph.pl "${OUTPUT_NAME}.perf-folded" > "../${OUTPUT_NAME}.svg"
+
+cd -
